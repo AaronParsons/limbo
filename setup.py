@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, Extension
 import os, glob, numpy, sys 
 
 sys.path.append('limbo')
@@ -35,6 +35,12 @@ setup(name='limbo',
         'astropy',
         'numpy',
         'scipy',
+        'cython',
+    ],
+
+    ext_modules = [
+        Extension(name='limbo._fdmt', sources=['limbo/_fdmt.pyx'], 
+                  include_dirs=[numpy.get_include()]),
     ],
 
     package_dir = {'limbo':'limbo'},

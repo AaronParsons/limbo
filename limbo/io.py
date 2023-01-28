@@ -22,11 +22,12 @@ def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
     return h
 
 
-def read_raw_data(filename, nspec=-1, header_size=HEADER_SIZE,
+def read_raw_data(filename, nspec=-1, skip=0, header_size=HEADER_SIZE,
               nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read raw data from a limbo file.'''
     with open(filename, 'rb') as f:
-        header = f.seek(header_size)
+        start = header_size + skip * dtype.itemsize * (nchan + infochan)
+        header = f.seek(start)
         if nspec < 0:
             data = np.frombuffer(f.read(), dtype=dtype)
         else:
@@ -35,12 +36,12 @@ def read_raw_data(filename, nspec=-1, header_size=HEADER_SIZE,
     data.shape = (-1, infochan + nchan)
     return data
 
-def read_file(filename, nspec=-1, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
+def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
               header_size=HEADER_SIZE, infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
     hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan,
                       header_size=header_size)
-    data = read_raw_data(filename, nspec=nspec, header_size=header_size,
+    data = read_raw_data(filename, nspec=nspec, skip=skip, header_size=header_size,
                          nchan=nchan, infochan=infochan, dtype=dtype)
     data = data[:, infochan:]
     hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime']
