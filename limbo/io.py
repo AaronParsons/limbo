@@ -2,6 +2,7 @@
 
 import numpy as np
 import json
+import os
 from astropy.time import Time
 
 from . import utils
@@ -9,8 +10,8 @@ from . import utils
 HEADER_SIZE = 1024
 NCHAN_DEFAULT = 2048
 
-def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
-                header_size=HEADER_SIZE):
+def read_header(filename, lo_hz=1350e6, header_size=HEADER_SIZE,
+              nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read header from a limbo file.'''
     with open(filename, 'rb') as f:
         h = f.read(header_size)
@@ -19,6 +20,8 @@ def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
         h['sample_clock'] = h.pop('SampleFreq') * 1e6
         h['freqs'] = utils.calc_freqs(h['sample_clock'], lo_hz, nchan)
         h['inttime'] = utils.calc_inttime(h['sample_clock'], h['AccLen'], nchan)
+    size = os.path.getsize(filename)
+    h['nspec'] = (size - header_size) // (dtype.itemsize * (nchan + infochan))
     return h
 
 
@@ -43,6 +46,7 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
                       header_size=header_size)
     data = read_raw_data(filename, nspec=nspec, skip=skip, header_size=header_size,
                          nchan=nchan, infochan=infochan, dtype=dtype)
+    assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
     hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime']
     t = Time(hdr['times'], format='unix', scale='utc')

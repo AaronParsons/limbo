@@ -1,6 +1,5 @@
 from .utils import DM_delay
 from ._fdmt import phs_sum
-from numpy.fft import rfft, irfft
 import numpy as np
 
 class FDMT:
@@ -10,8 +9,10 @@ class FDMT:
         self.cdtype = cdtype
         self.nfreqs = freqs.size
         self.ntimes = times.size
+        self.maxDM = maxDM
         _ffreq = np.fft.rfftfreq(self.ntimes, times[1] - times[0]).astype(dtype)
         self.stages = int(np.log2(self.nfreqs))
+        self.dms = np.linspace(0, self.maxDM, 2**self.stages, endpoint=False)
         chans = np.arange(self.nfreqs, dtype='uint32')
         freqs = freqs.astype(dtype)
         for i in range(1, self.stages):
@@ -25,8 +26,8 @@ class FDMT:
         return [d[:,0::2], d[:,1::2]]
             
     def apply(self, profile):
-        self._data = rfft(profile, axis=0).astype(self.cdtype)
+        self._data = np.fft.rfft(profile, axis=0).astype(self.cdtype)
         ans = [self._data]
         for i in range(1, self.stages):
             ans = sum([self.phs_sum(d, self.cache[i]) for d in ans], [])
-        return np.concatenate([irfft(d, axis=0) for d in ans], axis=1)
+        return np.concatenate([np.fft.irfft(d, axis=0) for d in ans], axis=1)

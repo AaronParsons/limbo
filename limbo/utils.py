@@ -27,4 +27,12 @@ def DM_delay(DM, freq):
     Returns:
         - Pulse time delay in [s] 
     """
-    return np.float32(DM * DM_CONST) / freq**2    
+    return np.float32(DM * DM_CONST) / freq**2
+
+def dedisperse(profile, DM, times, freqs):
+    _ffreq = np.fft.rfftfreq(times.size, times[1] - times[0])
+    delays = DM_delay(DM, freqs) - DM_delay(DM, freqs[-1])
+    phs = np.exp(2j * np.pi * np.outer(_ffreq, delays))
+    _profile = np.fft.rfft(profile, axis=0)
+    profile = np.fft.irfft(_profile * phs, axis=0)
+    return profile
