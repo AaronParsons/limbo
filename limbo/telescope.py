@@ -233,6 +233,18 @@ class Telescope:
         self.thread.start()
         
     def _track(self, ra, dec, sleep_time, flag_time, verbose):
+        """
+        Waits to see if observing flag has changed states. If observing
+        then compute new alt, az and point.
+        Inputs: 
+            - ra (str)|[hms]: Right ascension in [hours, arcmins, arcsecs]
+            - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
+            - sleep_time (float)|[s]: Time to wait before repointing
+            - flag_time (float)|[s]: Time to wait before rechecking if 
+             observing flag has changed states
+            - verbose (bool): Be verbose
+        Returns: None
+        """
         t0 = 0
         while self.observing:
             if time.time() - t0 > sleep_time:
