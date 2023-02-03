@@ -1,3 +1,6 @@
+import pyximport
+pyximport.install()
+
 from . import io
 from . import utils
 from . import fdmt
