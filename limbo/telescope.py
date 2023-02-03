@@ -25,7 +25,6 @@ ALT_MAINT, AZ_MAINT = 20., 180. # Position for antenna maintenance [degrees]
 ANT_HOSTNAME = '192.168.1.156' # RPI host for antenna
 NOISE_SERVER_HOSTNAME = '192.168.1.90' # RPI host for noise diode
 PORT = 1420
-SPECTROMETER_HOSTNAME = '10.0.1.2' # IP address of ROACH spectrometer
 
 # Offsets [degrees] to subtract from crd to get encoder value to write
 DELTA_ALT_ANT = -0.30  # (true - encoder) offset
