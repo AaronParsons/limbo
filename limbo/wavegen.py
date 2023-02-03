@@ -11,7 +11,7 @@ GPIO_TIMER_PIN = 26 # pin used for sleep timer/clock
 GPIO_LOOP_PIN = 16 # pin used for easy testing and debugging
 
 # PTS model
-MODEL = 'PTS3200'
+# MODEL = 'PTS3200'
 SUPPORTED_MODELS = ['PTS3200', 'PTS500', 'PTS300'] # PTS models supported
 
 # PTS model's min and max frequencies
@@ -41,7 +41,7 @@ class WaveGen():
                  gpio_pclk_pin=GPIO_PCLK_PIN, 
                  gpio_timer_pin=GPIO_TIMER_PIN, 
                  gpio_loop_pin=GPIO_LOOP_PIN, 
-                 model=MODEL, 
+                 model='PTS3200', 
                  no_signal=NO_SIGNAL):
         """
         Instantiate use of PTS and RPi GPIO pins.
@@ -73,7 +73,7 @@ class WaveGen():
                           self.gpio_loop_pin]
         
         self.no_signal = no_signal
-
+        
         GPIO.setwarnings(False) # ignore RPi.GPIO internal messaging
         GPIO.setmode(GPIO.BCM) # use GPIO numbers rather than pin numbers
         # define GPIO pins as outputs
@@ -191,7 +191,7 @@ class WaveGen():
 
     def _usleep(self, time, cal_cnt=445):
         """
-        XXX - method of time seems highly variable...
+        XXX - method of time seems highly variable and unreliable...
         Opt for hardware-based clock instead (GPIO pin switching).
         
         Sleep for a given number of microseconds.
