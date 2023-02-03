@@ -1,9 +1,12 @@
-'''Module for pointing Leuschner Telescope. Copied from ugradio'''
+""" Module for pointing Leuschner Telescope. Copied from ugradio. """
+
 import numpy as np
 import socket
 import time
-from astropy.coordinates import EarthLocation
+from astropy.coordinates import EarthLocation, SkyCoord
+import astropy.time as Time
 import astropy.units as u
+from threading import Thread
 
 # Coordinates of Leuschner Educational Observatory
 LAT = 37.9183  # deg
@@ -36,6 +39,9 @@ CMD_GET_AZ = 'getAz'
 CMD_GET_ALT = 'getAlt'
 
 
+# RA and DEC of SGR 1935+2154 (from McGill Online Magnetar Catalog)
+SGR_RA, SGR_DEC = '19h34m55.598s', '+21d53m47.79s'
+
 class Telescope:
     """
     Interface for controlling the Leuschner Telescope. Copied from ugradio.
@@ -51,6 +57,7 @@ class Telescope:
         )
         self._delta_alt = delta_alt
         self._delta_az = delta_az
+        self.observing = False # observation flag
         
     def _check_pointing(self, alt, az):
         """
@@ -149,10 +156,98 @@ class Telescope:
         """
         self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
     
+    def calc_altaz(self, ra, dec):
+        """
+        Convert (ra, dec) to (alt, az). 
+        """
+        c = SkyCoord(ra=ra*u.degree, dec=dec*u.degree)
+        gmtime = time.gmtime(time.time()) # time=now
+        fmt = '%Y-%m-%d %X'
+        ftime = time.strftime(fmt, gmtime)
+        obs_time = Time(ftime)
+        altaz = c.transform_to(AltAz(obstime=obs_time, location=self.location))
+        alt, az = altaz.alt.degree, altaz.az.degree
+        return alt, az
     
-###################################################################
-########################## NOISE SERVER ##########################
-###################################################################
+    def sunpos(self):
+        """
+        Returns the ra and dec (in degrees) of the Sun.
+        """
+        t = astropy.time.Time(time.time(), format='unix')
+        sun_coords = astropy.coordinates.get_sun(time=t)
+        return sun_coords.ra.deg, sun_coords.dec.deg
+    
+    def sgr1935_pos(self):
+        """
+        Returns the ra and dec (in degrees) of SGR 1935+2154.
+        Ra and  dec values taken from the McGill online magnetar 
+        catalog.
+        """
+        sgr = SkyCoord(SGR_RA, SGR_DEC)
+        return sgr.ra.deg, sgr.dec.deg
+
+    def track_sun(self, sleep_time=5, flag_time=0.1, verbose=False):
+        """
+        Track the Sun.
+        Inputs:
+            - sleep_time (float)|[s]: Time to wait in between telescope points
+                Default=5
+            - verbose (bool): Be verbose
+                Default=False
+        Returns: None
+        """
+        sun_ra, sun_dec = self.sunpos()
+        self.track(sun_ra, sun_dec, sleep_time, flag_time, verbose)
+        
+    def track_sgr1935(self, sleep_time=5, flag_time=0.1, verbose=False):
+        """
+        Track SGR 1935+2154.
+        Inputs:
+            - sleep_time (float)|[s]: Time to wait in between telescope points
+                Default=5
+            - verbose (bool): Be verbose
+                Default=False
+        Returns: None
+        """
+        sgr_ra, sgr_dec = self.sgr1935_pos()
+        self.track(sgr_ra, sgr_dec, sleep_time, flag_time, verbose)
+        
+    def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
+        """
+        Track an object.
+        Inputs:
+            - ra (str)|[hms]: Right ascension in [hours, arcmins, arcsecs]
+            - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
+            - sleep_time (float)|[s]: Time to wait before repointing
+                Default=5
+            - flag_time (float)|[s]: Time to wait before rechecking if 
+             observing flag has changed states
+                 Default=0.1
+            - verbose (bool): Be verbose
+                Default=False
+        Returns: None
+        """
+        assert(sleep_time > flag_time)
+        self.observing = True
+        self.thread = threading.Tread(target=self._track, args=(ra, dec, sleep_time, flag_time, verbose))
+        self.thread.start()
+        
+    def _track(self, ra, dec, sleep_time, flag_time, verbose):
+        t0 = 0
+        while self.observing:
+            if time.time() - t0 > sleep_time:
+                alt, az = self.calc_altaz(ra, dec)
+                self.point(alt, az, wait=True, verbose=verbose)
+                t0 = time.time()
+            time.sleep(flag_time)  
+                
+    def stop(self):
+        """
+        End observation.
+        """
+        self.observing = False
+        self.thread.join()
+        
     
 CMD_NOISE_ON = 'on'
 CMD_NOISE_OFF = 'off'
@@ -179,7 +274,7 @@ class Noise:
         
     def _cmd(self, cmd):
         """
-        Low-level interface for sending command to LeuschnerNoiseServer.
+        Low-level interface for sending commands to LeuschnerNoiseServer.
         """
         assert(cmd in (CMD_NOISE_ON, CMD_NOISE_OFF)) # Check if valid command
         if self.verbose: print('LeuschnerNoise sending command:', [cmd])
