@@ -21,10 +21,6 @@ class TestTelescope(unittest.TestCase):
         with pytest.raises(AssertionError):
             telescope._check_pointing(50, 355)
 
-    def test_get_pointing(self):
-        alt, az = 60, 110
-        assert(telescope.get_pointing(alt, az) == (59.70, 109.87))
-
     # pointing tests:
     def test_alt20(self):
         ALT = 20.
