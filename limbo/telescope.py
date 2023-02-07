@@ -31,11 +31,11 @@ DELTA_ALT_ANT = -0.30  # (true - encoder) offset
 DELTA_AZ_ANT  = -0.13  # (true - encoder) offset
 
 CMD_MOVE_AZ = 'moveAz'
-CMD_MOVE_ALT = 'moveAlt'
+CMD_MOVE_ALT = 'moveEl'
 CMD_WAIT_AZ = 'waitAz'
-CMD_WAIT_ALT = 'waitAlt'
+CMD_WAIT_ALT = 'waitEl'
 CMD_GET_AZ = 'getAz'
-CMD_GET_ALT = 'getAlt'
+CMD_GET_ALT = 'getEl'
 
 
 # RA and DEC of SGR 1935+2154 (from McGill Online Magnetar Catalog)
@@ -135,7 +135,7 @@ class Telescope:
         alt = float(self._command(CMD_GET_ALT, verbose=verbose))
         az = float(self._command(CMD_GET_AZ, verbose=verbose))
         # Return true (alt, az) corresponding to encoded position
-        return alt + self._delta_alt, az + self.delta_az
+        return alt + self._delta_alt, az + self._delta_az
 
     def stow(self, wait=True, verbose=False):
         """
@@ -146,7 +146,7 @@ class Telescope:
             - verbose (bool): be verbose
                 Default=False
         """
-        self.point(self.ALT_STOW, self.AZ_STOW, wait=wait, verbose=verbose)
+        self.point(alt=self.ALT_STOW, az=self.AZ_STOW, wait=wait, verbose=verbose)
 
     def maintenance(self, wait=True, verbose=False):
         """
