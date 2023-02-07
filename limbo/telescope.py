@@ -155,24 +155,26 @@ class Telescope:
         """
         self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
     
-    def calc_altaz(self, ra, dec):
+    def calc_altaz(self, ra, dec, jd=None):
         """
-        Convert (ra, dec) to (alt, az). 
+        Convert (ra, dec) to (alt, az).
+        Inputs:
+            - ra (str)|[hms]: Right ascension in [hours, arcmins, arcsecs]
+            - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
+            - jd (float): Julian date
         """
-        c = SkyCoord(ra=ra*u.degree, dec=dec*u.degree)
-        gmtime = time.gmtime(time.time()) # time=now
-        fmt = '%Y-%m-%d %X'
-        ftime = time.strftime(fmt, gmtime)
-        obs_time = Time(ftime)
-        altaz = c.transform_to(AltAz(obstime=obs_time, location=self.location))
-        alt, az = altaz.alt.degree, altaz.az.degree
-        return alt, az
+        if jd: t = Time(jd, format='jd')
+        else: t = Time(time.time(), format='unix')
+        c = SkyCoord(ra=ra, dec=dec, frame='icrs')
+        altaz = c.transform_to(AltAz(obstime=t, location=self.location))
+        return altaz.alt.degree, altaz.az.degree
     
-    def sunpos(self):
+    def sunpos(self, jd=None):
         """
         Returns the ra and dec (in degrees) of the Sun.
         """
-        t = astropy.time.Time(time.time(), format='unix')
+        if jd: t = Time(jd, format='jd')
+        else: t = Time(time.time(), format='unix')
         sun_coords = astropy.coordinates.get_sun(time=t)
         return sun_coords.ra.deg, sun_coords.dec.deg
     
@@ -182,7 +184,7 @@ class Telescope:
         Ra and  dec values taken from the McGill online magnetar 
         catalog.
         """
-        sgr = SkyCoord(SGR_RA, SGR_DEC)
+        sgr = SkyCoord(SGR_RA, SGR_DEC, frame='icrs')
         return sgr.ra.deg, sgr.dec.deg
 
     def track_sun(self, sleep_time=5, flag_time=0.1, verbose=False):
