@@ -3,8 +3,8 @@
 import numpy as np
 import socket
 import time
-from astropy.coordinates import EarthLocation, SkyCoord
-import astropy.time as Time
+import astropy.coordinates
+import astropy.time
 import astropy.units as u
 from threading import Thread
 
@@ -49,7 +49,7 @@ class Telescope:
                  lat=LAT, lon=LON, hgt=HEIGHT,
                  delta_alt=DELTA_ALT_ANT, delta_az=DELTA_AZ_ANT):
         self.hostport = (host, port)
-        self.location = EarthLocation(
+        self.location = astropy.coordinates.EarthLocation(
                             lat=lat * u.deg,
                             lon=lon * u.deg,
                             height=hgt * u.m,
@@ -167,18 +167,18 @@ class Telescope:
             - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
             - jd (float): Julian date
         """
-        if jd: t = Time(jd, format='jd')
-        else: t = Time(time.time(), format='unix')
-        c = SkyCoord(ra=ra, dec=dec, frame='icrs')
-        altaz = c.transform_to(AltAz(obstime=t, location=self.location))
+        if jd: t = astropy.time.Time(jd, format='jd')
+        else: t = astropy.time.Time(time.time(), format='unix')
+        c = astropy.coordinates.SkyCoord(ra=ra, dec=dec, frame='icrs')
+        altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
         return altaz.alt.degree, altaz.az.degree
 
     def sunpos(self, jd=None):
         """
         Returns the ra and dec (in degrees) of the Sun.
         """
-        if jd: t = Time(jd, format='jd')
-        else: t = Time(time.time(), format='unix')
+        if jd: t = astropy.time.Time(jd, format='jd')
+        else: t = astropy.time.Time(time.time(), format='unix')
         sun_coords = astropy.coordinates.get_sun(time=t)
         return sun_coords.ra.deg, sun_coords.dec.deg
 
@@ -188,7 +188,7 @@ class Telescope:
         Ra and  dec values taken from the McGill online magnetar
         catalog.
         """
-        sgr = SkyCoord(SGR_RA, SGR_DEC, frame='icrs')
+        sgr = astropy.coordinates.SkyCoord(SGR_RA, SGR_DEC, frame='icrs')
         return sgr.ra.deg, sgr.dec.deg
 
     def track_sun(self, sleep_time=5, flag_time=0.1, verbose=False):
