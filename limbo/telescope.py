@@ -58,6 +58,9 @@ class Telescope:
         self._delta_az = delta_az
         self.observing = False # observation flag
         self.ALT_STOW, self.AZ_STOW = ALT_STOW, AZ_STOW
+        self.ALT_MAINT, self.AZ_MAINT = ALT_MAINT, AZ_MAINT
+        self.ALT_MIN, self.ALT_MAX = ALT_MIN, ALT_MAX
+        self.AZ_MIN, self.AZ_MAX = AZ_MIN, AZ_MAX
 
     def _check_pointing(self, alt, az):
         """
@@ -67,8 +70,8 @@ class Telescope:
             - alt: altitude
             - az: azimuth
         """
-        assert(ALT_MIN < alt < ALT_MAX)
-        assert(AZ_MIN < az < AZ_MAX)
+        assert(self.ALT_MIN < alt < self.ALT_MAX)
+        assert(self.AZ_MIN < az < self.AZ_MAX)
 
     def _command(self, cmd, bufsize=1024, timeout=10, verbose=False):
         """
@@ -143,7 +146,7 @@ class Telescope:
             - verbose (bool): be verbose
                 Default=False
         """
-        self.point(ALT_STOW, AZ_STOW, wait=wait, verbose=verbose)
+        self.point(self.ALT_STOW, self.AZ_STOW, wait=wait, verbose=verbose)
 
     def maintenance(self, wait=True, verbose=False):
         """
@@ -154,7 +157,7 @@ class Telescope:
             - verbose (bool): be verbose
                 Default=False
         """
-        self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
+        self.point(self.ALT_MAINT, self.AZ_MAINT, wait=wait, verbose=verbose)
 
     def calc_altaz(self, ra, dec, jd=None):
         """
