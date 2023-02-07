@@ -57,10 +57,11 @@ class Telescope:
         self._delta_alt = delta_alt
         self._delta_az = delta_az
         self.observing = False # observation flag
-        
+        self.ALT_STOW, self.AZ_STOW = ALT_STOW, AZ_STOW
+
     def _check_pointing(self, alt, az):
         """
-        Ensure pointing is within telescope bounds. Raises 
+        Ensure pointing is within telescope bounds. Raises
         AssertionError if not.
         Inputs:
             - alt: altitude
@@ -68,7 +69,7 @@ class Telescope:
         """
         assert(ALT_MIN < alt < ALT_MAX)
         assert(AZ_MIN < az < AZ_MAX)
-        
+
     def _command(self, cmd, bufsize=1024, timeout=10, verbose=False):
         """
         Communicate with host server and return response as string.
@@ -86,7 +87,7 @@ class Telescope:
         response = b''.join(response)
         if verbose: print('Got response:', [response])
         return response
-    
+
     def wait(self, verbose=False):
         """
         Wait until telescope slewing is complete.
@@ -117,7 +118,7 @@ class Telescope:
         assert((resp1 == b'ok') and (resp2 == b'ok')) # Fails if server is down or rejects command
         if verbose: print('Pointing initiated.')
         if wait: self.wait(verbose=verbose)
-        
+
     def get_pointing(self, verbose=False):
         """
         Return current telescope's current pointing coordinate.
@@ -132,7 +133,7 @@ class Telescope:
         az = float(self._command(CMD_GET_AZ, verbose=verbose))
         # Return true (alt, az) corresponding to encoded position
         return alt + self._delta_alt, az + self.delta_az
-    
+
     def stow(self, wait=True, verbose=False):
         """
         Point to stow position.
@@ -143,7 +144,7 @@ class Telescope:
                 Default=False
         """
         self.point(ALT_STOW, AZ_STOW, wait=wait, verbose=verbose)
-        
+
     def maintenance(self, wait=True, verbose=False):
         """
         Point to maintenance position.
@@ -154,7 +155,7 @@ class Telescope:
                 Default=False
         """
         self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
-    
+
     def calc_altaz(self, ra, dec, jd=None):
         """
         Convert (ra, dec) to (alt, az).
@@ -168,7 +169,7 @@ class Telescope:
         c = SkyCoord(ra=ra, dec=dec, frame='icrs')
         altaz = c.transform_to(AltAz(obstime=t, location=self.location))
         return altaz.alt.degree, altaz.az.degree
-    
+
     def sunpos(self, jd=None):
         """
         Returns the ra and dec (in degrees) of the Sun.
@@ -177,11 +178,11 @@ class Telescope:
         else: t = Time(time.time(), format='unix')
         sun_coords = astropy.coordinates.get_sun(time=t)
         return sun_coords.ra.deg, sun_coords.dec.deg
-    
+
     def sgr1935_pos(self):
         """
         Returns the ra and dec (in degrees) of SGR 1935+2154.
-        Ra and  dec values taken from the McGill online magnetar 
+        Ra and  dec values taken from the McGill online magnetar
         catalog.
         """
         sgr = SkyCoord(SGR_RA, SGR_DEC, frame='icrs')
@@ -199,7 +200,7 @@ class Telescope:
         """
         sun_ra, sun_dec = self.sunpos()
         self.track(sun_ra, sun_dec, sleep_time, flag_time, verbose)
-        
+
     def track_sgr1935(self, sleep_time=5, flag_time=0.1, verbose=False):
         """
         Track SGR 1935+2154.
@@ -212,7 +213,7 @@ class Telescope:
         """
         sgr_ra, sgr_dec = self.sgr1935_pos()
         self.track(sgr_ra, sgr_dec, sleep_time, flag_time, verbose)
-        
+
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
         Track an object.
@@ -221,7 +222,7 @@ class Telescope:
             - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
             - sleep_time (float)|[s]: Time to wait before repointing
                 Default=5
-            - flag_time (float)|[s]: Time to wait before rechecking if 
+            - flag_time (float)|[s]: Time to wait before rechecking if
              observing flag has changed states
                  Default=0.1
             - verbose (bool): Be verbose
@@ -232,16 +233,16 @@ class Telescope:
         self.observing = True
         self.thread = threading.Tread(target=self._track, args=(ra, dec, sleep_time, flag_time, verbose))
         self.thread.start()
-        
+
     def _track(self, ra, dec, sleep_time, flag_time, verbose):
         """
         Waits to see if observing flag has changed states. If observing
         then compute new alt, az and point.
-        Inputs: 
+        Inputs:
             - ra (str)|[hms]: Right ascension in [hours, arcmins, arcsecs]
             - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
             - sleep_time (float)|[s]: Time to wait before repointing
-            - flag_time (float)|[s]: Time to wait before rechecking if 
+            - flag_time (float)|[s]: Time to wait before rechecking if
              observing flag has changed states
             - verbose (bool): Be verbose
         Returns: None
@@ -252,19 +253,19 @@ class Telescope:
                 alt, az = self.calc_altaz(ra, dec)
                 self.point(alt, az, wait=True, verbose=verbose)
                 t0 = time.time()
-            time.sleep(flag_time)  
-                
+            time.sleep(flag_time)
+
     def stop(self):
         """
         End observation.
         """
         self.observing = False
         self.thread.join()
-        
-    
+
+
 CMD_NOISE_ON = 'on'
 CMD_NOISE_OFF = 'off'
-    
+
 class Noise:
     """
     Interface for controlling noise diode on Leuschner dish.
@@ -272,19 +273,19 @@ class Noise:
     def __init__(self, host=NOISE_SERVER_HOSTNAME, port=PORT, verbose=False):
         self.hostport = (host, port)
         self.verbose = verbose
-        
+
     def on(self):
         """
         Turn Leuschner noise diode on.
         """
         self._cmd(CMD_NOISE_ON)
-        
+
     def off(self):
         """
         Turn Leuschner noise diode off.
         """
         self._cmd(CMD_NOISE_OFF)
-        
+
     def _cmd(self, cmd):
         """
         Low-level interface for sending commands to LeuschnerNoiseServer.
