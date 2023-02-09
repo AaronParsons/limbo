@@ -31,7 +31,7 @@ print('Collecting data...')
 subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable data recording
 time.sleep(20*60) # collect data for 20 mins
 subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
-subprocess.run(['/usr/local/bin/stop_recorder.sh'], shell=True) # stop the data recorder
+#subprocess.run(['/usr/local/bin/stop_recorder.sh'], shell=True) # stop the data recorder
 
 # Stow when finished
 print('Done... Stowing telescope.')
