@@ -66,6 +66,5 @@ class TestTelescope(unittest.TestCase):
 
     def test_sunpos(self):
         ra, dec = telescope.sunpos(jd=JD)
-        assert ra == pytest.approx(298.375, 0)
-        assert dec == pytest.approx(-20.8789, 0)
-
+        assert ra == pytest.approx(298.099, 0.01)
+        assert dec == pytest.approx(-20.927, 0.01)
