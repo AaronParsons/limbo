@@ -9,6 +9,8 @@ import astropy.units as u
 import subprocess
 import time
 
+print('Getting ready...')
+
 t = limbo.telescope.Telescope()
 
 # Add 5 mins in RA
@@ -21,13 +23,16 @@ sunra, sundec = t.sunpos()*u.deg # [deg]
 alt, az = t.calc_altaz(sunra+5ra, sundec) # [deg]
 
 # Point telescope
+print('Pointing telescope.')
 t.point(alt, az)
 
 # Collect data
+print('Collecting data...')
 subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable data recording
 time.sleep(20*60) # collect data for 20 mins
 subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
 subprocess.run(['/usr/local/bin/stop_recorder.sh'], shell=True) # stop the data recorder
 
 # Stow when finished
+print('Done... Stowing telescope.')
 t.stow()
