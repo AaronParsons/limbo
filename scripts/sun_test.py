@@ -14,13 +14,13 @@ print('Getting ready...')
 t = limbo.telescope.Telescope()
 
 # Add 5 mins in RA
-5ra = 1.25*u.deg # [deg]
+ra5 = 1.25*u.deg # [deg]
 
 # Current Sun RA and DEC
 sunra, sundec = t.sunpos()*u.deg # [deg]
 
 # Compute alt, az that we will point to
-alt, az = t.calc_altaz(sunra+5ra, sundec) # [deg]
+alt, az = t.calc_altaz(sunra+ra5, sundec) # [deg]
 
 # Point telescope
 print('Pointing telescope.')
