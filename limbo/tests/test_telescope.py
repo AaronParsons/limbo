@@ -1,7 +1,6 @@
 """ Tests for limbo.telescope """
 
 import pytest
-import unittest
 from limbo.telescope import Telescope
 
 
@@ -9,7 +8,7 @@ JD = 2458500.3
 
 telescope = Telescope()
 
-class TestTelescope(unittest.TestCase):
+class TestTelescope:
 
     def test_check_pointing(self):
         with pytest.raises(AssertionError):
