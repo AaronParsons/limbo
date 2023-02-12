@@ -1,4 +1,5 @@
 import socket
+import time
 
 DEVICE = '/dev/usbtmc0' # default mounting point
 HOST, PORT = '10.32.92.95', 1341
@@ -11,23 +12,14 @@ class Synth:
     """
     Instantiate connection to the Agilent frequency synthesizer.
     """
-    def __init__(self, host=HOST, port=PORT, device=DEVICE):
-        self.hostport = (host, port)
-        self.device = device
-
-    def _write(self, cmd):
-        '''Low-level writing interface to device.  Not intended direct use.'''
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(10) # seconds
-        self.sock.connect(self.hostport)
-        self.sock.sendall(bytes(cmd, encoding='utf-8'))
-        if not cmd.endswith('?'): self.sock.close()
-
-    def _read(self):
-        '''Low-level reading interface to device.  Not intended direct use.'''
-        resp = self.sock.recv(1024)
-        self.sock.close()
-        return resp
+    def validate(self):
+        """
+        Make sure this is the device we think it is.
+        """
+        self._write('*IDN?') # query ID
+        resp = self._read().strip()
+        resp = resp.split(',')
+        assert(resp[0] == 'Agilent Technologies')
 
     def get_frequency(self):
         """
@@ -57,7 +49,7 @@ class Synth:
         cmd = ':FREQuency:CW %f %s' % (val, unit)
         sef._write(cmd)
 
-    def get_amplitude(self)
+    def get_amplitude(self):
         """
         Get the current amplitude setting for the CW (continuous wave) 
         output mode of the synthesizer.
@@ -72,7 +64,7 @@ class Synth:
         amp, unit = resp.split()
         return float(amp), unit
 
-   def set_amplitude(self, amp, unit):
+    def set_amplitude(self, amp, unit):
         """
         Set the amplitude setting for the CW (continuous wave) output 
         mode of the synthesizer.
@@ -108,3 +100,31 @@ class Synth:
         Turn RFout off.
         """
         self._write(':RFOutput:STATe OFF')
+
+
+class SynthClient(Synth):
+    """
+    Impliments a network connection to a synthesizer which is being
+    hosted on another computer.
+    """
+    def __init__(self, host=HOST, port=PORT):
+        self.hostport = (host, port)
+
+    def _write(self, cmd):
+        """
+        Low-level writing interface to device.  Not intended direct use.
+        """
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(10) # seconds
+        self.sock.connect(self.hostport)
+        self.sock.sendall(bytes(cmd, encoding='utf-8'))
+        if not cmd.endswith('?'): self.sock.close()
+
+    def _read(self):
+        """
+        Low-level reading interface to device.  Not intended direct use.
+        """
+        resp = self.sock.recv(1024)
+        self.sock.close()
+        return resp
+
