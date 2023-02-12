@@ -214,8 +214,7 @@ class Telescope:
                 Default=False
         Returns: None
         """
-        sgr_ra, sgr_dec = self.sgr1935_pos()
-        self.track(sgr_ra, sgr_dec, sleep_time, flag_time, verbose)
+        self.track(SGR_RA, SGR_DEC, sleep_time, flag_time, verbose)
 
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
@@ -234,7 +233,7 @@ class Telescope:
         """
         assert(sleep_time > flag_time)
         self.observing = True
-        self.thread = threading.Tread(target=self._track, args=(ra, dec, sleep_time, flag_time, verbose))
+        self.thread = Thread(target=self._track, args=(ra, dec, sleep_time, flag_time, verbose))
         self.thread.start()
 
     def _track(self, ra, dec, sleep_time, flag_time, verbose):
