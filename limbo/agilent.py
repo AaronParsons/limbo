@@ -1,6 +1,4 @@
 import socket
-import time
-import thread
 
 DEVICE = '/dev/usbtmc0' # default mounting point
 HOST, PORT = '10.32.92.95', 1341
