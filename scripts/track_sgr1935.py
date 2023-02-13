@@ -16,4 +16,4 @@ try:
 except(AssertionError):
     t.stop()
     subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
-
+    t.stow()
