@@ -37,9 +37,14 @@ CMD_WAIT_ALT = 'waitEl'
 CMD_GET_AZ = 'getAz'
 CMD_GET_ALT = 'getEl'
 
+# RA and DEC of the Sun
+SUN_RA, SUN_DEC = '21h51m07s', '-13d00m50s'
 
-# RA and DEC of SGR 1935+2154 (from McGill Online Magnetar Catalog)
+# RA and DEC of SGR 1935+2154 (from McGill Online Magnetar Catalog) - J2000
 SGR_RA, SGR_DEC = '19h34m55.598s', '+21d53m47.79s'
+
+# Crab pulsar - J2000
+CRAB_RA, CRAB_DEC = '05h34m31.95s', '+22d00m52.2s'
 
 class Telescope:
     """
@@ -159,19 +164,39 @@ class Telescope:
         """
         self.point(self.ALT_MAINT, self.AZ_MAINT, wait=wait, verbose=verbose)
 
-    def calc_altaz(self, ra, dec, jd=None):
+    def calc_altaz(self, ra, dec, jd=None, equinox='J2000'):
         """
         Convert (ra, dec) to (alt, az).
         Inputs:
-            - ra (str)|[hms]: Right ascension in [hours, arcmins, arcsecs]
+            - ra (str)|[hms]: Right ascension in [hours, mins, secs]
             - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
             - jd (float): Julian date
         """
         if jd: t = astropy.time.Time(jd, format='jd')
         else: t = astropy.time.Time(time.time(), format='unix')
-        c = astropy.coordinates.SkyCoord(ra=ra, dec=dec, frame='icrs')
+        c = astropy.coordinates.SkyCoord(ra=ra, dec=dec, unit='deg', equinox=equinox)
         altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
         return altaz.alt.degree, altaz.az.degree
+
+    def precess(self, ra, dec, jd=None, equinox='J2000'):
+        """
+        Precess the given RA and DEC to the current equinox.
+        Inputs:
+            - ra (str)|[hms]: Right ascension in [hours, mins, secs] at 
+               specified equinox
+            - dec (str)|[dms]: Declination in [degrees, mins, secs] at 
+               specified equinox
+            - jd (float): Julian date
+            - equinox (str): equinox of ra/dec coordinates
+                Default='J2000'
+        Returns: precessed ra and dec [deg] 
+        """
+        c = astropy.coordinates.SkyCoord(ra, dec, frame='fk5', equinox=equinox) # XXX FK5 or ICRS?
+        if jd: t = astropy.time.Time(jd, format='jd')
+        else: t = astropy.time.Time(time.time(), format='unix')
+        gcrs_now = astropy.coordinates.GCRS(obstime=t)
+        c_now = c.transform_to(gcrs_now)
+        return c_now.ra.deg, c_now.dec.deg
 
     def sunpos(self, jd=None):
         """
@@ -179,17 +204,17 @@ class Telescope:
         """
         if jd: t = astropy.time.Time(jd, format='jd')
         else: t = astropy.time.Time(time.time(), format='unix')
-        sun_coords = astropy.coordinates.get_sun(time=t)
-        return sun_coords.ra.deg, sun_coords.dec.deg
+        sun = astropy.coordinates.get_sun(time=t)
+        return sun.ra.deg, sun.dec.deg
 
-    def sgr1935_pos(self):
+    def sgr1935_pos(self,  equinox='J2000'):
         """
         Returns the ra and dec (in degrees) of SGR 1935+2154.
         Ra and  dec values taken from the McGill online magnetar
         catalog.
         """
-        sgr = astropy.coordinates.SkyCoord(SGR_RA, SGR_DEC, frame='icrs')
-        return sgr.ra.deg, sgr.dec.deg
+        sgr_ra, sgr_dec = astropy.coordinates.SkyCoord(SGR_RA, SGR_DEC, equinox=equinox)
+        return sgr_ra, sgr_dec
 
     def track_sun(self, sleep_time=5, flag_time=0.1, verbose=False):
         """
@@ -201,20 +226,8 @@ class Telescope:
                 Default=False
         Returns: None
         """
-        sun_ra, sun_dec = self.sunpos()
-        self.track(sun_ra, sun_dec, sleep_time, flag_time, verbose)
-
-    def track_sgr1935(self, sleep_time=5, flag_time=0.1, verbose=False):
-        """
-        Track SGR 1935+2154.
-        Inputs:
-            - sleep_time (float)|[s]: Time to wait in between telescope points
-                Default=5
-            - verbose (bool): Be verbose
-                Default=False
-        Returns: None
-        """
-        self.track(SGR_RA, SGR_DEC, sleep_time, flag_time, verbose)
+        # sun_ra, sun_dec = self.sunpos()
+        self.track(SUN_RA, SUN_DEC, sleep_time, flag_time, verbose)
 
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
@@ -252,9 +265,12 @@ class Telescope:
         t0 = 0
         while self.observing:
             if time.time() - t0 > sleep_time:
-                alt, az = self.calc_altaz(ra, dec)
-                self.point(alt, az, wait=True, verbose=verbose)
-                t0 = time.time()
+                try:
+                    alt, az = self.calc_altaz(ra, dec)
+                    self.point(alt, az, wait=True, verbose=verbose)
+                    t0 = time.time()
+                except(AssertionError):
+                    print('Pointing failed :(')
             time.sleep(flag_time)
 
     def stop(self):
