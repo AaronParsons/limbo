@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import limbo.telescope as telescope
 import subprocess
 import argparse
