@@ -34,18 +34,19 @@ t = telescope.Telescope()
 
 # Point to first coordinate values (alt, az)
 ALT0, AZ0 = t.calc_altaz(RA, DEC)
+print('Slewing...')
 t.point(ALT0, AZ0, wait=True, verbose=VERBOSE)
 
 # Start collecting data
 subprocess.run(['/usr/local/bin/restart_recorder.sh'], shell=True) # instantiate recorder
 subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable data recording
 
+print('Tracking '+ OBJECT)
 try:
     t.track(RA, DEC, verbose=VERBOSE)
 except(AssertionError): # if object is out of bounds
+    print('Source is out of range. Finishing observation.')
     t.stop()
     subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
-    subprocess.run(['/usr/local/bin/stop_recorder.sh'], shell=True) # stop the recorder
-
-# finally:
-#     t.stow()
+    print('Stowing...')
+    t.stow()
