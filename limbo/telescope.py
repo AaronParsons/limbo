@@ -7,11 +7,22 @@ import astropy.coordinates
 import astropy.time
 import astropy.units as u
 from threading import Thread
+import redis
+
+REDISHOST = 'localhost'
+REDIS_KEYS = {'Target_RA_Deg',
+              'Target_DEC_Deg',
+              'Pointing_EL',
+              'Pointing_AZ',
+              'Pointing_Updated'}
+# XXX RECORD_DATA_KEY = 'Record_Data' # XXX Don't think Wei has this key included in his stuff yet
+
+r = redis.Redis(REDISHOST, decode_responses=True)
 
 # Coordinates of Leuschner Educational Observatory
-LAT = 37.9183  # deg
-LON = -122.1067  # deg
-HEIGHT = 304.0  # m
+LAT = 37.9183 # deg
+LON = -122.1067 # deg
+HEIGHT = 304.0 # m
 
 # Hardware parameters
 MAX_SLEW_TIME = 220 # [s]
@@ -30,6 +41,7 @@ PORT = 1420
 DELTA_ALT_ANT = -0.30  # (true - encoder) offset
 DELTA_AZ_ANT  = -0.13  # (true - encoder) offset
 
+# Server commands
 CMD_MOVE_AZ = 'moveAz'
 CMD_MOVE_ALT = 'moveEl'
 CMD_WAIT_AZ = 'waitAz'
@@ -62,10 +74,6 @@ class Telescope:
         self._delta_alt = delta_alt
         self._delta_az = delta_az
         self.observing = False # observation flag
-        self.ALT_STOW, self.AZ_STOW = ALT_STOW, AZ_STOW
-        self.ALT_MAINT, self.AZ_MAINT = ALT_MAINT, AZ_MAINT
-        self.ALT_MIN, self.ALT_MAX = ALT_MIN, ALT_MAX
-        self.AZ_MIN, self.AZ_MAX = AZ_MIN, AZ_MAX
 
     def _check_pointing(self, alt, az):
         """
@@ -75,8 +83,8 @@ class Telescope:
             - alt: altitude
             - az: azimuth
         """
-        assert(self.ALT_MIN < alt < self.ALT_MAX)
-        assert(self.AZ_MIN < az < self.AZ_MAX)
+        assert(ALT_MIN < alt < ALT_MAX)
+        assert(AZ_MIN < az < AZ_MAX)
 
     def _command(self, cmd, bufsize=1024, timeout=10, verbose=False):
         """
@@ -151,7 +159,7 @@ class Telescope:
             - verbose (bool): be verbose
                 Default=False
         """
-        self.point(alt=self.ALT_STOW, az=self.AZ_STOW, wait=wait, verbose=verbose)
+        self.point(alt=ALT_STOW, az=AZ_STOW, wait=wait, verbose=verbose)
 
     def maintenance(self, wait=True, verbose=False):
         """
@@ -162,7 +170,7 @@ class Telescope:
             - verbose (bool): be verbose
                 Default=False
         """
-        self.point(self.ALT_MAINT, self.AZ_MAINT, wait=wait, verbose=verbose)
+        self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
 
     def calc_altaz(self, ra, dec, jd=None, equinox='J2000'):
         """
@@ -177,57 +185,6 @@ class Telescope:
         c = astropy.coordinates.SkyCoord(ra=ra, dec=dec, unit='deg', equinox=equinox)
         altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
         return altaz.alt.degree, altaz.az.degree
-
-    def precess(self, ra, dec, jd=None, equinox='J2000'):
-        """
-        Precess the given RA and DEC to the current equinox.
-        Inputs:
-            - ra (str)|[hms]: Right ascension in [hours, mins, secs] at 
-               specified equinox
-            - dec (str)|[dms]: Declination in [degrees, mins, secs] at 
-               specified equinox
-            - jd (float): Julian date
-            - equinox (str): equinox of ra/dec coordinates
-                Default='J2000'
-        Returns: precessed ra and dec [deg] 
-        """
-        c = astropy.coordinates.SkyCoord(ra, dec, frame='fk5', equinox=equinox) # XXX FK5 or ICRS?
-        if jd: t = astropy.time.Time(jd, format='jd')
-        else: t = astropy.time.Time(time.time(), format='unix')
-        gcrs_now = astropy.coordinates.GCRS(obstime=t)
-        c_now = c.transform_to(gcrs_now)
-        return c_now.ra.deg, c_now.dec.deg
-
-    def sunpos(self, jd=None):
-        """
-        Returns the ra and dec (in degrees) of the Sun.
-        """
-        if jd: t = astropy.time.Time(jd, format='jd')
-        else: t = astropy.time.Time(time.time(), format='unix')
-        sun = astropy.coordinates.get_sun(time=t)
-        return sun.ra.deg, sun.dec.deg
-
-    def sgr1935_pos(self,  equinox='J2000'):
-        """
-        Returns the ra and dec (in degrees) of SGR 1935+2154.
-        Ra and  dec values taken from the McGill online magnetar
-        catalog.
-        """
-        sgr_ra, sgr_dec = astropy.coordinates.SkyCoord(SGR_RA, SGR_DEC, equinox=equinox)
-        return sgr_ra, sgr_dec
-
-    def track_sun(self, sleep_time=5, flag_time=0.1, verbose=False):
-        """
-        Track the Sun.
-        Inputs:
-            - sleep_time (float)|[s]: Time to wait in between telescope points
-                Default=5
-            - verbose (bool): Be verbose
-                Default=False
-        Returns: None
-        """
-        # sun_ra, sun_dec = self.sunpos()
-        self.track(SUN_RA, SUN_DEC, sleep_time, flag_time, verbose)
 
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
@@ -262,15 +219,16 @@ class Telescope:
             - verbose (bool): Be verbose
         Returns: None
         """
+        ra_deg, dec_deg = astropy.coordinates.SkyCoord(ra, dec, equinox='J2000')
         t0 = 0
         while self.observing:
             if time.time() - t0 > sleep_time:
-                try:
-                    alt, az = self.calc_altaz(ra, dec)
-                    self.point(alt, az, wait=True, verbose=verbose)
-                    t0 = time.time()
-                except(AssertionError):
-                    print('Pointing failed :(')
+                alt, az = self.calc_altaz(ra, dec)
+                self.point(alt, az, wait=True, verbose=verbose)
+                t0 = time.time()
+                vals = [ra_deg, dec_deg, alt, az, t0]
+                for i, key in enumerate(REDIS_KEYS.keys()):
+                    r.hset('limbo', key, vals[i]) # XXX TELESCOPE_SETTINGS or limbo:?
             time.sleep(flag_time)
 
     def stop(self):
