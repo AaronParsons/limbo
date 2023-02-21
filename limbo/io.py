@@ -4,6 +4,7 @@ import numpy as np
 import json
 import os
 from astropy.time import Time
+import struct
 
 from . import utils
 
@@ -14,6 +15,12 @@ def read_header(filename, lo_hz=1350e6, header_size=HEADER_SIZE,
               nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read header from a limbo file.'''
     with open(filename, 'rb') as f:
+        s = f.read(1)
+        f.seek(0,0)
+        if(s==b'{'):
+            header_size = HEADER_SIZE
+        else:
+            header_size = struct.unpack('I',f.read(4))[0]
         h = f.read(header_size)
         h = json.loads(h[:h.find(0x00)])
         h['filename'] = filename
