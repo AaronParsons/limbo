@@ -38,7 +38,6 @@ print('Slewing...')
 t.point(ALT0, AZ0, wait=True, verbose=VERBOSE)
 
 # Start collecting data
-subprocess.run(['/usr/local/bin/restart_recorder.sh'], shell=True) # instantiate recorder
 subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable data recording
 
 print('Tracking '+ OBJECT)
