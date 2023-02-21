@@ -10,12 +10,14 @@ from threading import Thread
 import redis
 
 REDISHOST = 'localhost'
-REDIS_KEYS = {'Target_RA_Deg',
-              'Target_DEC_Deg',
-              'Pointing_EL',
-              'Pointing_AZ',
-              'Pointing_Updated'}
-# XXX RECORD_DATA_KEY = 'Record_Data' # XXX Don't think Wei has this key included in his stuff yet
+REDIS_KEYS = {
+        'limbo:Target_RA_Deg' : 0, 
+        'limbo:Target_DEC_Deg' : 0 ,
+        'limbo:Pointing_EL' : 90,
+        'limbo:Pointing_AZ' : 0,
+        'limbo:Pointing_Updated' : 0
+            }
+# XXX RECORD_DATA_KEY
 
 r = redis.Redis(REDISHOST, decode_responses=True)
 
@@ -219,7 +221,8 @@ class Telescope:
             - verbose (bool): Be verbose
         Returns: None
         """
-        ra_deg, dec_deg = astropy.coordinates.SkyCoord(ra, dec, equinox='J2000')
+        # c = astropy.coordinates.SkyCoord(ra, dec, equinox='J2000')
+        # ra_deg, dec_deg = c.ra.deg, c.dec.deg
         t0 = 0
         while self.observing:
             if time.time() - t0 > sleep_time:
@@ -228,7 +231,7 @@ class Telescope:
                 t0 = time.time()
                 vals = [ra_deg, dec_deg, alt, az, t0]
                 for i, key in enumerate(REDIS_KEYS.keys()):
-                    r.hset('limbo', key, vals[i]) # XXX TELESCOPE_SETTINGS or limbo:?
+                    r.hset('limbo', key, vals[i]) # XXX confirm with Wei
             time.sleep(flag_time)
 
     def stop(self):
