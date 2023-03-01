@@ -10,14 +10,14 @@ from threading import Thread
 import redis
 
 REDISHOST = 'localhost'
-REDIS_KEYS = {
-        'limbo:Target_RA_Deg' : 0, 
-        'limbo:Target_DEC_Deg' : 0 ,
-        'limbo:Pointing_EL' : 90,
-        'limbo:Pointing_AZ' : 0,
-        'limbo:Pointing_Updated' : 0
-            }
-# XXX RECORD_DATA_KEY
+REDIS_KEYS = [
+        'Target_RA_Deg', 
+        'Target_DEC_Deg',
+        'Pointing_EL',
+        'Pointing_AZ',
+        'Pointing_Updated',
+        'Record'
+        ]
 
 r = redis.Redis(REDISHOST, decode_responses=True)
 
@@ -51,14 +51,14 @@ CMD_WAIT_ALT = 'waitEl'
 CMD_GET_AZ = 'getAz'
 CMD_GET_ALT = 'getEl'
 
-# RA and DEC of the Sun
-SUN_RA, SUN_DEC = '21h51m07s', '-13d00m50s'
-
 # RA and DEC of SGR 1935+2154 (from McGill Online Magnetar Catalog) - J2000
 SGR_RA, SGR_DEC = '19h34m55.598s', '+21d53m47.79s'
 
 # Crab pulsar - J2000
 CRAB_RA, CRAB_DEC = '05h34m31.95s', '+22d00m52.2s'
+
+# Cygnus A - J2000
+CYGA_RA, CYGA_DEC = '19h59m28.35656837s', '+40d44m02.0972325s'
 
 class Telescope:
     """
@@ -188,6 +188,18 @@ class Telescope:
         altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
         return altaz.alt.degree, altaz.az.degree
 
+    def sunpos(self, jd=None):
+        """
+        Return the ra and dec of the Sun in hmsdms str format.
+        """
+        if jd: t = astropy.time.Time(jd, format='jd')
+        else: t = astropy.time.Time(time.time(), format='unix')
+        sun = astropy.coordinates.get_sun(time=t)
+        c = astropy.coordinates.SkyCoord(sun.ra.deg, sun.dec.deg, unit='deg', frame='icrs')
+        coords = c.to_string('hmsdms') # Go back to hmsdms unit + str format
+        ra, dec = coords.split(' ')
+        return ra, dec
+
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
         Track an object.
@@ -221,17 +233,18 @@ class Telescope:
             - verbose (bool): Be verbose
         Returns: None
         """
-        # c = astropy.coordinates.SkyCoord(ra, dec, equinox='J2000')
-        # ra_deg, dec_deg = c.ra.deg, c.dec.deg
         t0 = 0
         while self.observing:
             if time.time() - t0 > sleep_time:
                 alt, az = self.calc_altaz(ra, dec)
-                self.point(alt, az, wait=True, verbose=verbose)
-                t0 = time.time()
-                vals = [ra_deg, dec_deg, alt, az, t0]
-                for i, key in enumerate(REDIS_KEYS.keys()):
-                    r.hset('limbo', key, vals[i]) # XXX confirm with Wei
+                try:
+                    self.point(alt, az, wait=True, verbose=verbose)
+                    t0 = time.time()
+                    vals = [ra, dec, alt, az, t0, 1]
+                    for key, val in zip(REDIS_KEYS, vals):
+                        r.hset('limbo', key, val) # XXX confirm with Wei
+                except(AssertionError):
+                    r.hset('limbo', 'Record', 0)
             time.sleep(flag_time)
 
     def stop(self):
