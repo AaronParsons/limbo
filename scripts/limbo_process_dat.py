@@ -41,7 +41,7 @@ def process_next(f):
     std_spec = np.std(data, axis=0)
     np.savez(outfile, avg_spec=avg_spec, med_spec=med_spec, std_spec=std_spec,
              **hdr)
-    os.remove(filename)
+#    os.remove(filename)
 
 
 if __name__ == '__main__':
