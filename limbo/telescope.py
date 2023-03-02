@@ -40,7 +40,7 @@ NOISE_SERVER_HOSTNAME = '192.168.1.90' # RPI host for noise diode
 PORT = 1420
 
 # Offsets [degrees] to subtract from crd to get encoder value to write
-DELTA_ALT_ANT = -0.30  # (true - encoder) offset
+DELTA_ALT_ANT = -1.10  # (true - encoder) offset
 DELTA_AZ_ANT  = -0.13  # (true - encoder) offset
 
 # Server commands
