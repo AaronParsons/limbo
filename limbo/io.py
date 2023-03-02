@@ -11,16 +11,20 @@ from . import utils
 HEADER_SIZE = 1024
 NCHAN_DEFAULT = 2048
 
+def _get_header_size(f):
+    s = f.read(1)
+    f.seek(0,0)
+    if(s==b'{'):
+        header_size = HEADER_SIZE
+    else:
+        header_size = struct.unpack('I',f.read(4))[0]
+    return header_size
+
 def read_header(filename, lo_hz=1350e6, header_size=HEADER_SIZE,
               nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read header from a limbo file.'''
     with open(filename, 'rb') as f:
-        s = f.read(1)
-        f.seek(0,0)
-        if(s==b'{'):
-            header_size = HEADER_SIZE
-        else:
-            header_size = struct.unpack('I',f.read(4))[0]
+        header_size = _get_header_size(f)
         h = f.read(header_size)
         h = json.loads(h[:h.find(0x00)])
         h['filename'] = filename
@@ -36,8 +40,9 @@ def read_raw_data(filename, nspec=-1, skip=0, header_size=HEADER_SIZE,
               nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read raw data from a limbo file.'''
     with open(filename, 'rb') as f:
+        header_size = _get_header_size(f)
         start = header_size + skip * dtype.itemsize * (nchan + infochan)
-        header = f.seek(start)
+        header = f.seek(start,1)
         if nspec < 0:
             data = np.frombuffer(f.read(), dtype=dtype)
         else:
