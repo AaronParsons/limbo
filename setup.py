@@ -36,6 +36,7 @@ setup(name='limbo',
         'numpy',
         'scipy',
         'cython',
+        'redis'
     ],
 
     ext_modules = [
