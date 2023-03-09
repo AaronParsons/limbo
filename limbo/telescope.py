@@ -40,8 +40,8 @@ NOISE_SERVER_HOSTNAME = '192.168.1.90' # RPI host for noise diode
 PORT = 1420
 
 # Offsets [degrees] to subtract from crd to get encoder value to write
-DELTA_ALT_ANT = -0.46  # (true - encoder) offset
-DELTA_AZ_ANT  = -0.13  # (true - encoder) offset
+DELTA_ALT_ANT = -0.46 + 0.003814261454927248 # (true - encoder) offset
+DELTA_AZ_ANT  = -0.13 + 0.00858691465120387 # (true - encoder) offset
 
 # Server commands
 CMD_MOVE_AZ = 'moveAz'
@@ -59,6 +59,9 @@ CRAB_RA, CRAB_DEC = '05h34m31.95s', '+22d00m52.2s'
 
 # Cygnus A - J2000
 CYGA_RA, CYGA_DEC = '19h59m28.35656837s', '+40d44m02.0972325s'
+
+# Cassiopia A
+CASA_RA, CASA_DEC = '23h23m24.000', '+58d48m54.00'
 
 class Telescope:
     """
@@ -195,10 +198,10 @@ class Telescope:
         if jd: t = astropy.time.Time(jd, format='jd')
         else: t = astropy.time.Time(time.time(), format='unix')
         sun = astropy.coordinates.get_sun(time=t)
-        c = astropy.coordinates.SkyCoord(sun.ra.deg, sun.dec.deg, unit='deg', frame='icrs')
-        coords = c.to_string('hmsdms') # Go back to hmsdms unit + str format
-        ra, dec = coords.split(' ')
-        return ra, dec
+        # c = astropy.coordinates.SkyCoord(sun.ra.deg, sun.dec.deg, unit='deg', frame='icrs')
+        # coords = c.to_string('hmsdms') # Go back to hmsdms unit + str format
+        # ra, dec = coords.split(' ')
+        return sun.ra.deg, sun.dec.deg
 
     def track(self, ra, dec, sleep_time=5, flag_time=0.1, verbose=False):
         """
