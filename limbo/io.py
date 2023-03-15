@@ -49,13 +49,10 @@ def read_raw_data(filename, nspec=-1, skip=0, nchan=NCHAN_DEFAULT, infochan=12, 
     data.shape = (-1, infochan + nchan)
     return data
 
-def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
-              header_size=HEADER_SIZE, infochan=12, dtype=np.dtype('>u2')):
+def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
-    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan,
-                      header_size=header_size)
-    data = read_raw_data(filename, nspec=nspec, skip=skip, header_size=header_size,
-                         nchan=nchan, infochan=infochan, dtype=dtype)
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
+    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=nchan, infochan=infochan, dtype=dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
     hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime']
