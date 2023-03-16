@@ -4,20 +4,20 @@ from .fdmt import FDMT
 
 # Load matrices used to remove baseline structure along time and frequency axes
 
-#BANDPASS_FILE = os.path.join(os.path.dirname(__file__),'data', 'bandpass_v002.npz')
-#BANDPASS_NPZ = np.load(BANDPASS_FILE)
-#FMDL = bandpass_npz['mdl']
+BANDPASS_FILE = os.path.join(os.path.dirname(__file__),'data', 'bandpass_v002.npz')
+BANDPASS_NPZ = np.load(BANDPASS_FILE)
+FMDL = BANDPASS_NPZ['mdl']
 
 FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v001.npz')
 FREQ_MASK_NPZ = np.load(FREQMASK_FILE)
-FREQ_MASK = freq_mask_npz['mask']
-FREQ_AMAT = freq_mask_npz['amat']
-FREQ_FMAT = freq_mask_npz['fmat']
+FREQ_MASK = FREQ_MASK_NPZ['mask']
+FREQ_AMAT = FREQ_MASK_NPZ['amat']
+FREQ_FMAT = FREQ_MASK_NPZ['fmat']
 
 TIMEFILT_FILE = os.path.join(os.path.dirname(__file__),'data', 'time_filt_v001.npz')
 TIME_FILT_NPZ = np.load(TIMEFILT_FILE)
-TIME_AMAT = freq_mask_npz['amat']
-TIME_FMAT = freq_mask_npz['fmat']
+TIME_AMAT = FREQ_MASK_NPZ['amat']
+TIME_FMAT = FREQ_MASK_NPZ['fmat']
 
 def dpss_filter(y, amat, fmat):
     '''Apply the provided DPSS filter matrices to data.'''
@@ -37,7 +37,7 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, nsig=4, maxdm=500,
     #tmdl = dpss_filter(tgain, time_amat, time_fmat)  # XXX too much work for payoff?
     tmdl = tgain  # shortcut
     mdl = np.outer(tmdl, fmdl)
-    diff_data = dat - mdl
+    diff_data = data - mdl
     #nos = mdl / hdr['AccLen']**0.5  # compute noise from power spectrum level
     #full_mask = np.where(diff_data > nsig * nos, False, True)
     full_mask = np.ones_like(diff_data).astype(bool)

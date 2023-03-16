@@ -5,11 +5,27 @@ import redis
 import os
 import time
 import numpy as np
+import subprocess
 
 REDISHOST = 'localhost'
 REDIS_RAW_PSPEC_FILES = 'limbo:raw_pspec_files'
 PURGATORY_KEY = 'limbo:purgatory'
 DATA_PATH = '/home/obs/data'
+REMOVE_PATH = os.path.join(DATA_PATH, 'remove')
+SAVE_PATH = os.path.join(DATA_PATH, 'save')
+NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
+TEMPLATE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'limbo_processing_template.ipynb')
+
+os_env = {
+    'LIMBO_PROCFILE': None,
+    'LIMBO_INJECT_FRB': False,
+    'LIMBO_NSIG': 7,
+    'LIMBO_MAX_DM': 500,
+    'LIMBO_EXCLUDE_S': 0.05,
+    'LIMBO_REMOVE_DIR': REMOVE_PATH,
+    'LIMBO_SAVE_DIR': SAVE_PATH,
+}
+
 
 r = redis.Redis(REDISHOST, decode_responses=True)
 
@@ -30,18 +46,15 @@ def filter_done(f, thd):
 
 def process_next(f):
     filename = os.path.join(DATA_PATH, f)
+    context = os_env.copy()
+    context['LIMBO_PROCFILE'] = filename
     if not os.path.exists(filename):
         print(f'Did not find {filename}.')
         return
-    outfile = os.path.join(DATA_PATH, f+'.avg.npz')
-    print(f'Processing {filename} -> {outfile}')
-    hdr, data = limbo.io.read_file(filename)
-    avg_spec = np.mean(data, axis=0)
-    med_spec = np.median(data, axis=0)
-    std_spec = np.std(data, axis=0)
-    np.savez(outfile, avg_spec=avg_spec, med_spec=med_spec, std_spec=std_spec,
-             **hdr)
-#    os.remove(filename)
+    notebook_out = os.path.join(NOTEBOOK_PATH, filename+'.ipynb')
+    print(f'Processing {filename} -> {notebook_out}')
+
+    subprocess.Popen(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', TEMPLATE_FILE, '--output', notebook_out], env=context)
 
 
 if __name__ == '__main__':
