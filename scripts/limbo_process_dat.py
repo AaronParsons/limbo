@@ -14,14 +14,14 @@ DATA_PATH = '/home/obs/data'
 REMOVE_PATH = os.path.join(DATA_PATH, 'remove')
 SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
-TEMPLATE_FILE = os.path.join(os.path.dirname(__file__), 'data', 'limbo_processing_template.ipynb')
+TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
 
 os_env = {
     'LIMBO_PROCFILE': None,
-    'LIMBO_INJECT_FRB': False,
-    'LIMBO_NSIG': 7,
-    'LIMBO_MAX_DM': 500,
-    'LIMBO_EXCLUDE_S': 0.05,
+    'LIMBO_INJECT_FRB': '0',
+    'LIMBO_NSIG': '9',
+    'LIMBO_MAX_DM': '500',
+    'LIMBO_EXCLUDE_S': '0.05',
     'LIMBO_REMOVE_DIR': REMOVE_PATH,
     'LIMBO_SAVE_DIR': SAVE_PATH,
 }
@@ -47,14 +47,20 @@ def filter_done(f, thd):
 def process_next(f):
     filename = os.path.join(DATA_PATH, f)
     context = os_env.copy()
+    context.update(os.environ)
     context['LIMBO_PROCFILE'] = filename
     if not os.path.exists(filename):
         print(f'Did not find {filename}.')
         return
-    notebook_out = os.path.join(NOTEBOOK_PATH, filename+'.ipynb')
+    notebook_out = os.path.join(NOTEBOOK_PATH, os.path.basename(filename)+'.ipynb')
     print(f'Processing {filename} -> {notebook_out}')
 
-    subprocess.Popen(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', TEMPLATE_FILE, '--output', notebook_out], env=context)
+    #subprocess.Popen(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', TEMPLATE_FILE, '--output', notebook_out], env=context, shell=True)
+    print(f'jupyter nbconvert --to notebook --execute {TEMPLATE_FILE} --output {notebook_out}')
+    p = subprocess.call([f'jupyter nbconvert --to notebook --execute {TEMPLATE_FILE} --output {notebook_out}'], env=context, shell=True)
+    r.hdel(PURGATORY_KEY, f)
+    print(f'Finished')
+
 
 
 if __name__ == '__main__':
@@ -63,7 +69,7 @@ if __name__ == '__main__':
     qlen = r.llen(REDIS_RAW_PSPEC_FILES)
     print(f'Starting LIMBO processing. Queue length={qlen}')
     children = {}
-    nworkers = 2
+    nworkers = 12
     try:
         while True:
             qlen = r.llen(REDIS_RAW_PSPEC_FILES)
