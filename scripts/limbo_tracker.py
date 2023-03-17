@@ -54,12 +54,14 @@ try:
     while True:
         record = int(r.hget('limbo', 'Record'))
         if record and not already_recording:
+            print('Turning on data recorder.')
             subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable data recording
             already_recording = True
         if not record and already_recording:
+            print('Turning off data recorder.')
             subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
             already_recording = False
 except(KeyboardInterrupt):
+    print('Ending observation and turning off data recorder.')
     t.stop()
     subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable data recording
-    # t.stow()
