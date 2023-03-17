@@ -177,19 +177,56 @@ class Telescope:
         """
         self.point(ALT_MAINT, AZ_MAINT, wait=wait, verbose=verbose)
 
-    def calc_altaz(self, ra, dec, jd=None, equinox='J2000'):
+    def calc_altaz(self, coord0, coord1, frame='eq', jd=None, equinox='J2000'):
         """
-        Convert (ra, dec) to (alt, az).
+        Convert set of coordinates to (alt, az).
         Inputs:
-            - ra (str)|[hms]: Right ascension in [hours, mins, secs]
-            - dec (str)|[dms]: Declination in [degrees, arcmins, arcsecs]
-            - jd (float): Julian date
+            - coord0 (str/float)|[hms/deg]: Either ra or l  depending 
+               on frame choice. 
+               If frame='eq' then coord0 is right ascension in [hours,
+               mins, secs]. If frame='ga' then coord0 is galactic
+               latitude [deg].
+            - coord1 (str/float)|[dms/deg]: Either dec or be depending
+               on frame choice.
+               If frame='eq' then coord1 is declination in [deg,
+               mins, secs]. If frame='ga' then coor10 is galactic
+               longitude [deg].
+            - frame (str): Coordinate system/frame. Either 'eq' or
+               'ga'. Default is 'eq'.
+            - jd (float): Julian date. 
+            - equinox (str): coordinate frame equinox. Default='J2000'
+
+        Returns:
+            - alt, az (float)|[deg]
+        """
+        assert frame in ['eq', 'ga'], "Invalid coordinate frame provided."
+        if jd: t = astropy.time.Time(jd, format='jd')
+        else: t = astropy.time.Time(time.time(), format='unix')
+        if frame == 'eq':
+            c = astropy.coordinates.SkyCoord(coord0, coord1, unit='deg', equinox=equinox)
+        if frame == 'ga':
+            c = astropy.coordinates.SkyCoord(coord0, coord1, unit='deg', frame='galactic', equinox=equinox)
+        altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
+        return altaz.alt.degree, altaz.az.degree
+
+    def convert_ga_to_eq(self, l, b, jd=None, equinox='J2000'):
+        """
+        Converts galactic coordinates to ra and dec.
+
+        Inputs:
+            - l (float)|[deg]: latitude
+            - b (float)|[deg]: longitude
+            - jd (float): Julian date. 
+            - equinox (str): coordinate frame equinox. Default='J2000'
+            
+        Returns:
+            - ra, dec (str)|[hmsdms]
         """
         if jd: t = astropy.time.Time(jd, format='jd')
         else: t = astropy.time.Time(time.time(), format='unix')
-        c = astropy.coordinates.SkyCoord(ra=ra, dec=dec, unit='deg', equinox=equinox)
-        altaz = c.transform_to(astropy.coordinates.AltAz(obstime=t, location=self.location))
-        return altaz.alt.degree, altaz.az.degree
+        c = astropy.coordinates.SkyCoord(l, b, unit='deg', frame='galactic', equinox=equinox)
+        ra, dec = c.icrs.to_string('hmsdms').split(' ')
+        return ra, dec
 
     def sunpos(self, jd=None):
         """
