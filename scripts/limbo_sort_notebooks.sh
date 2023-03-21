@@ -2,7 +2,7 @@
 
 export DATAPATH=/home/obs/data
 
-cd ${DATAPATH}/notebooks
+cd ${DATAPATH}/notebook
 
 for f in `ls *.dat.ipynb`
 do
