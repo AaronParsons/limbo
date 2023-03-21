@@ -2,18 +2,18 @@
 
 export DATAPATH=/home/obs/data
 
-cd ${DATAPATH}/save
+cd ${DATAPATH}/notebooks
 
-for f in `ls *.dat`
+for f in `ls *.dat.ipynb`
 do
-	echo Moving ${f}.ipynb to ${DATAPATH}/notebook/save
-	mv ../notebook/${f}.ipynb ../notebook/save 
-done
-
-cd ${DATAPATH}/remove
-
-for f in `ls *.dat`
-do
-	echo Moving ${f}.ipynb to ${DATAPATH}/notebook/remove
-	mv ../notebook/${f}.ipynb ../notebook/remove
+    fdat=`echo Spectra_20230321152750.dat.ipynb | sed "s/.ipynb//"`
+    if test -f "${DATAPATH}/save/${fdat}"; then
+	    echo Moving ${f} to ${DATAPATH}/notebook/save
+	    mv ${f} ${DATAPATH}/notebook/save
+    elif test -f "${DATAPATH}/remove/${fdat}"; then
+        echo Moving ${f} to ${DATAPATH}/notebook/remove
+	    mv ${f} ${DATAPATH}/notebook/remove
+    else
+        echo Could not find ${fdat}
+    fi
 done
