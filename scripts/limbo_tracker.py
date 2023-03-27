@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(prog='LIMBO_tracker', description = 'Track an o
 parser.add_argument('--object', dest='object', type=str,  help='observing object', default=None, required=False)
 parser.add_argument('--ra', dest='ra', type=str, help='Right ascension [hms]', default=None, required=False)
 parser.add_argument('--dec', dest='dec', type=str, help='Declination [dms]', default=None, required=False)
-parser.add_argument('--verbose', dest='verbose', type=bool, help='Be verbose', default=False, required=False)
+parser.add_argument('--verbose', dest='verbose', type=bool, help='Be verbose', default=True, required=False)
 
 args = parser.parse_args()
 OBJECT = args.object
