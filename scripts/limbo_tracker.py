@@ -6,6 +6,7 @@ import limbo.telescope as telescope
 import subprocess
 import argparse
 import redis
+import time
 
 REDISHOST = 'localhost'
 r = redis.Redis(REDISHOST, decode_responses=True)
@@ -43,10 +44,17 @@ if INPUT_RA and INPUT_DEC is not None:
 
 # Point to first coordinate values (alt, az)
 ALT0, AZ0 = t.calc_altaz(RA, DEC)
-print(ALT0, AZ0)
-print('Slewing...')
-t.point(ALT0, AZ0, wait=True, verbose=VERBOSE)
-print('Pointing locked.')
+print('Initial coords:', ALT0, AZ0)
+
+in_range = False
+while not in_range:
+    try:
+        t.point(ALT0, AZ0, wait=True, verbose=VERBOSE)
+        in_range = True
+    except AssertionError:
+        print('Source is out of range. Waiting for it to enter range.')
+        time.sleep(10*60)
+
 t.track(RA, DEC, verbose=VERBOSE)
 
 already_recording = False
