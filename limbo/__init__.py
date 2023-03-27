@@ -7,5 +7,6 @@ from . import fdmt
 from . import _fdmt
 from . import sim
 from . import telescope
+from . import agilent
 from . import processing
 # from . import agilent
