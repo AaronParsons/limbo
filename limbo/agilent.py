@@ -1,3 +1,7 @@
+"""
+Module for interacting with the Agilent N9130a Frequency Synthesizer. Copied from ugradio.
+"""
+
 import socket
 import time
 
@@ -7,6 +11,7 @@ WAIT = 0.3 # s
 
 FREQ_UNIT = ['GHz','MHz','kHz']
 AMP_UNIT = ['dBm','mV','uV']
+
 
 class Synth:
     """
@@ -102,29 +107,51 @@ class Synth:
         self._write(':RFOutput:STATe OFF')
 
 
-class SynthClient(Synth):
+class SynthDirect(Synth):
     """
-    Impliments a network connection to a synthesizer which is being
-    hosted on another computer.
+    Implements a direct connection to the synthesizer via a USB
+    connection (typically device='/dev/usbtmc0' or similar.)
     """
-    def __init__(self, host=HOST, port=PORT):
-        self.hostport = (host, port)
+    def __init__(self, device=DEVICE):
+        """
+        Inputs:
+            - device (str): the file-like object representing the USB
+              connection. Default='/dev/usbtmc0'
+        """
+        self._device = device
+        self._open_device()
+
+    def _open_device(self):
+        """
+        Open low-level device interface. Not intended for direct use.
+        """
+        try: 
+            self.dev.close()
+        except(AttributeError):
+            pass
+        self.dev = open(self._device, 'rb+')
+        self.validate()
 
     def _write(self, cmd):
         """
-        Low-level writing interface to device.  Not intended direct use.
+        Low-level writing interface to device. Not intended for direct
+        use.
         """
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.settimeout(10) # seconds
-        self.sock.connect(self.hostport)
-        self.sock.sendall(bytes(cmd, encoding='utf-8'))
-        if not cmd.endswith('?'): self.sock.close()
+        self.dev.write(bytes(cmd, encoding='utf-8'))
+        self.dev.flush()
+        time.sleep(WAIT) # slow down writing to avoid spam attacks
 
     def _read(self):
         """
-        Low-level reading interface to device.  Not intended direct use.
+        Low-level reading interface to device. Not intended for direct
+        use.
         """
-        resp = self.sock.recv(1024)
-        self.sock.close()
-        return resp
+        rv = []
+        while True:
+            try:
+                rv.append(self.dev.read(1))
+            except(TimeoutError):
+                break
+        rv = b''.join(rv)
+        return rv.decode('utf-8')
 
