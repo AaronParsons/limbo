@@ -56,7 +56,7 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
     thot = np.where(hot > hsig * hnos)
     diff_data[thot,hch0:hch1] = 0
     full_mask[thot,hch0:hch1] = 0
-    fdmt = limbo.processing.FDMT(hdr['freqs'][ch0:ch1], hdr['times'], maxDM=maxdm)
+    fdmt = FDMT(hdr['freqs'][ch0:ch1], hdr['times'], maxDM=maxdm)
     dm_vs_t = fdmt.apply(diff_data[:,ch0:ch1])
     dmt = {'dmt': dm_vs_t, 'dms': fdmt.dms, 'fmdl': fmdl, 'tmdl': tmdl, 'diff': diff_data}
     return dmt
