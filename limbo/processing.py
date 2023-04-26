@@ -8,6 +8,10 @@ BANDPASS_FILE = os.path.join(os.path.dirname(__file__),'data', 'bandpass_v002.np
 BANDPASS_NPZ = np.load(BANDPASS_FILE)
 FMDL = BANDPASS_NPZ['mdl']
 
+CAL_FILE = os.path.join(os.path.dirname(__file__),'data', 'calibration_v001.npz')
+CAL_NPZ = np.load(CAL_FILE)
+CALGAIN = CAL_NPZ['cnt2jy']
+
 FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v002.npz')
 FREQ_MASK_NPZ = np.load(FREQMASK_FILE)
 FREQ_MASK = FREQ_MASK_NPZ['mask']
