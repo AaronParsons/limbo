@@ -41,7 +41,7 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
         freq_amat: Frequency filtering design matrix, derived from data/freq_mask_v002.npz
         freq_fmat: Frequency filtering matrix mask, derived from data/freq_mask_v002.npz
     Returns:
-        dmt: Dictionary with keys 'dmt', 'dms', 'fmdl', 'tmdl', 'diff'.
+        dmt: Dictionary with keys 'dmt', 'dms', 'fmdl', 'tmdl', 'diff', 'tmask', 'fmask'.
     '''
     spec = np.mean(data, axis=0)
     fmdl = dpss_filter(spec * fmask.astype('float'), freq_amat, freq_fmat)
@@ -54,7 +54,8 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
     mdl = np.outer(tmdl, fmdl)
     diff_data = data - mdl
     full_mask = np.outer(tmask, fmask)
-    diff_data *= full_mask
+    noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape) # Gaussian inpainting
+    diff_data = np.where(full_mask, diff_data, noise)
     hot = np.sum(diff_data[:,hch0:hch1], axis=1)
     hnos = np.sqrt(np.sum(nos[hch0:hch1][fmask[hch0:hch1]]**2))
     thot = np.where(hot > hsig * hnos)
@@ -62,5 +63,5 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
     full_mask[thot,hch0:hch1] = 0
     fdmt = FDMT(hdr['freqs'][ch0:ch1], hdr['times'], maxDM=maxdm)
     dm_vs_t = fdmt.apply(diff_data[:,ch0:ch1])
-    dmt = {'dmt': dm_vs_t, 'dms': fdmt.dms, 'fmdl': fmdl, 'tmdl': tmdl, 'diff': diff_data}
+    dmt = {'dmt': dm_vs_t, 'dms': fdmt.dms, 'fmdl': fmdl, 'tmdl': tmdl, 'diff': diff_data, 'tmask': tmask, 'fmask': fmask}
     return dmt
