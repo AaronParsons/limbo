@@ -60,3 +60,18 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT, inf
     hdr['jds'] = t.jd
     hdr['date'] = t.strftime('%Y-%m-%d %H:%M:%S')[0]
     return hdr, data
+
+def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=2*NCHAN_DEFAULT, infochan=24, dtype=np.dtype('>u1')):
+    '''Read header and data from a limbo file.'''
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
+    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=nchan, infochan=infochan, dtype=dtype)
+    assert data.shape[0] > 0  # make sure we read some data
+    data = data[:, infochan:]
+    data.shape = (-1, 2, NCHAN_DEFAULT)
+    data_real = (data & 0xf0).view('>i1') >> 4
+    data_imag = ((data << 4) & 0xf0).view('>i1') >> 4
+    hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime']
+    t = Time(hdr['times'], format='unix', scale='utc')
+    hdr['jds'] = t.jd
+    hdr['date'] = t.strftime('%Y-%m-%d %H:%M:%S')[0]
+    return hdr, data_real, data_imag
