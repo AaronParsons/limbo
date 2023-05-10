@@ -14,6 +14,7 @@ DATA_PATH = '/home/obs/data'
 REMOVE_PATH = os.path.join(DATA_PATH, 'remove')
 SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
+VOLT_DIR = '/mnt/ramdisk'
 VOLT_SAVE_PATH = '/mnt/data01'
 TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
 # DATABASE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_database.csv')
@@ -27,7 +28,8 @@ os_env = {
     'LIMBO_EXCLUDE_S': '0.05',
     'LIMBO_REMOVE_DIR': REMOVE_PATH,
     'LIMBO_SAVE_DIR': SAVE_PATH,
-    'LIMBO_VOLT_DAVE_DIR': VOLT_SAVE_PATH,
+    'LIMBO_VOLT_SAVE_DIR': VOLT_SAVE_PATH,
+    'LIMBO_VOLT_DIR':, VOLT_DIR,
     'LIMBO_DATABASE_FILE': DATABASE_FILE
 }
 
