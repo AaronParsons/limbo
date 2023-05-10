@@ -16,7 +16,8 @@ SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
 VOLT_SAVE_PATH = '/mnt/data01'
 TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
-DATABASE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_database.csv')
+# DATABASE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_database.csv')
+DATABASE_FILE = '/home/obs/limbo/limbo/data/limbo_database.csv'
 
 os_env = {
     'LIMBO_PROCFILE': None,
