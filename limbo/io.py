@@ -27,11 +27,11 @@ def read_start_time(filename, dtype=np.dtype('<u4')):
         f.seek(header_size, 0)
         # timestamp is 32b zeros, 32b sec, 32b zeros, 32b usec
         _, sec, _, usec = np.frombuffer(f.read(16), dtype=dtype)
-    return sec, usec
+    return float(sec) + float(usec) * 1e-6
 
 def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
     '''Read header from a limbo file.'''
-    sec, usec = read_start_time(filename)
+    start_t = read_start_time(filename)
     with open(filename, 'rb') as f:
         header_size = _get_header_size(f)
         h = f.read(header_size)
@@ -41,7 +41,7 @@ def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=
         h['freqs'] = utils.calc_freqs(h['sample_clock'], lo_hz, nchan)
         h['inttime'] = utils.calc_inttime(h['sample_clock'], h['AccLen'], nchan)
         h['Time_created'] = h['Time']
-        h['Time'] = float(sec) + float(usec) * 1e-6
+        h['Time'] = start_t
     size = os.path.getsize(filename)
     h['nspec'] = (size - header_size) // (dtype.itemsize * (nchan + infochan))
     return h
