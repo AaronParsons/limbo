@@ -9,4 +9,5 @@ from . import sim
 from . import telescope
 from . import agilent
 from . import processing
+from . import database
 # from . import agilent
