@@ -49,7 +49,9 @@ print('Initial coords:', ALT0, AZ0)
 in_range = False
 while not in_range:
     try:
-        t.point(ALT0, AZ0, wait=True, verbose=VERBOSE)
+        _ALT0, _AZ0 = t.calc_altaz(RA, DEC)
+        print(f'Trying to point to (_ALT0, _AZ0).')
+        t.point(_ALT0, _AZ0, wait=True, verbose=VERBOSE)
         in_range = True
     except AssertionError:
         print('Source is out of range. Waiting for it to enter range.')
