@@ -50,7 +50,7 @@ in_range = False
 while not in_range:
     try:
         _ALT0, _AZ0 = t.calc_altaz(RA, DEC)
-        print(f'Trying to point to (_ALT0, _AZ0).')
+        print(f'Trying to point to ({_ALT0}, {_AZ0}).')
         t.point(_ALT0, _AZ0, wait=True, verbose=VERBOSE)
         in_range = True
     except AssertionError:
