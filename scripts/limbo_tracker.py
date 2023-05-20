@@ -71,7 +71,7 @@ try:
         if not record and already_recording:
             print('Turning off data recorders.')
             subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True) # disable PS recording
-            subprocess.run(['/usr/local/bin/disable_vol_record.sh'], shell=True) # disable VS recording
+            subprocess.run(['/usr/local/bin/diable_vol_record.sh'], shell=True) # disable VS recording
             already_recording = False
 except(KeyboardInterrupt):
     print('Ending observation and turning off data recorders.')
