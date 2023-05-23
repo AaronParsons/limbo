@@ -18,7 +18,6 @@ VOLT_DIR = '/mnt/ramdisk'
 VOLT_SAVE_PATH = '/mnt/data01'
 TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
 # DATABASE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_database.csv')
-DATABASE_FILE = '/home/obs/limbo/limbo/data/limbo_database.csv'
 
 os_env = {
     'LIMBO_PROCFILE': None,
@@ -30,7 +29,6 @@ os_env = {
     'LIMBO_SAVE_DIR': SAVE_PATH,
     'LIMBO_VOLT_SAVE_DIR': VOLT_SAVE_PATH,
     'LIMBO_VOLT_DIR': VOLT_DIR,
-    'LIMBO_DATABASE_FILE': DATABASE_FILE
 }
 
 
