@@ -21,7 +21,7 @@ TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_pro
 
 os_env = {
     'LIMBO_PROCFILE': None,
-    'LIMBO_INJECT_FRB': '1',
+    'LIMBO_INJECT_FRB': '0',
     'LIMBO_NSIG': '6',
     'LIMBO_MAX_DM': '500',
     'LIMBO_EXCLUDE_S': '0.05',
