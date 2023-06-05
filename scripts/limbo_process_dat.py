@@ -24,6 +24,7 @@ os_env = {
     'LIMBO_INJECT_FRB': '0',
     'LIMBO_NSIG': '6',
     'LIMBO_MAX_DM': '500',
+    'LIMBO_MAX_DM': '300',
     'LIMBO_EXCLUDE_S': '0.05',
     'LIMBO_REMOVE_DIR': REMOVE_PATH,
     'LIMBO_SAVE_DIR': SAVE_PATH,
