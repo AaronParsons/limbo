@@ -64,6 +64,7 @@ try:
     while True:
         record = int(r.hget('limbo', 'Record'))
         if record and not already_recording:
+            r.hset('limbo', 'Source', OBJECT)
             print('Turning on data recorders.')
             subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True) # enable PS recording
             subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True) # enable VS recording 

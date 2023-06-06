@@ -282,7 +282,7 @@ class Telescope:
                     t0 = time.time()
                     vals = [ra, dec, alt, az, t0, 1]
                     for key, val in zip(REDIS_KEYS, vals):
-                        r.hset('limbo', key, val) # XXX confirm with Wei
+                        r.hset('limbo', key, val)
                 except(AssertionError):
                     r.hset('limbo', 'Record', 0)
             time.sleep(flag_time)
