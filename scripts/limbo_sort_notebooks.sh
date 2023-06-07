@@ -12,7 +12,7 @@ do
         echo Moving ${f} to ${DATAPATH}/notebook/save
         mv ${f} ${DATAPATH}/notebook/save
 #     elif test -f "${DATAPATH}/remove/${fdat}"; then
-    elif test -f "${REMOVE_DIR}${fdat}"; then
+    elif test -f "${REMOVE_DIR}/${fdat}"; then
         echo Moving ${f} to ${DATAPATH}/notebook/remove
         mv ${f} ${DATAPATH}/notebook/remove
     else
