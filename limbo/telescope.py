@@ -291,10 +291,11 @@ class Telescope:
         """
         End observation.
         """
-        self.observing = False
-        self.thread.join()
-
-
+        if self.observing:
+            self.observing = False
+            self.thread.join()
+                   
+    
 CMD_NOISE_ON = 'on'
 CMD_NOISE_OFF = 'off'
 
