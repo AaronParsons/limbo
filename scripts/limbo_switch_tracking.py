@@ -7,33 +7,24 @@ import subprocess
 import argparse
 import redis
 import time
-from threading import Thread
-import itertools
 
 REDISHOST = 'localhost'
 r = redis.Redis(REDISHOST, decode_responses=True)
 
 parser = argparse.ArgumentParser(prog='LIMBO_switch_tracker', description = 'Track objects based on specified priority')
 
-parser.add_argument('--sources', dest='srcs', type=list, help='observing sources (str or tuple of ra and dec)', default=None, required=False)
-# parser.add_argument('--priority_source', dest='priority_src', help='Source to observe with priority', default=None, required=False)
 parser.add_argument('--verbose', dest='verbose', type=bool, help='Be verbose', default=True, required=False)
 
 args = parser.parse_args()
-SRCS = args.srcs
-# PRIORITY_SRC = args.priority_src
 VERBOSE = args.verbose
 
 t = telescope.Telescope()
 
+# NOTE: Sources are listed in order of priority
 SRCS = {
         'sgr1935':(telescope.SGR_RA, telescope.SGR_DEC),
-        'crab':(telescope.CRAB_RA, telescope.CRAB_DEC),  
-#         'sun':{'RA':t.sunpos()[0], 'DEC':t.sunpos()[1]},
-#         'CygA':{'RA':telescope.CYGA_RA, 'DEC':telescope.CYGA_DEC},
-#         'CasA':{'RA':telescope.CASA_RA, 'DEC':telescope.CASA_DEC}
-            }
-
+        'crab':(telescope.CRAB_RA, telescope.CRAB_DEC)
+        }
 
 def can_point(ra, dec, jd=None):
     alt, az = t.calc_altaz(ra, dec, jd=jd)
