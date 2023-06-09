@@ -11,27 +11,24 @@ REDISHOST = 'localhost'
 REDIS_RAW_PSPEC_FILES = 'limbo:raw_pspec_files'
 PURGATORY_KEY = 'limbo:purgatory'
 DATA_PATH = '/home/obs/data'
-# REMOVE_PATH = os.path.join(DATA_PATH, 'remove')
 REMOVE_PATH = '/mnt/data03'
 SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
 VOLT_DIR = '/mnt/ramdisk'
 VOLT_SAVE_PATH = '/mnt/data01'
-TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
-# DATABASE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_database.csv')
+# TEMPLATE_FILE = os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_processing_template.ipynb')
 
 os_env = {
     'LIMBO_PROCFILE': None,
-    'LIMBO_INJECT_FRB': '0',
-    'LIMBO_NSIG': '6',
-    'LIMBO_MAX_DM': '500',
-    'LIMBO_MASK_DM': '300',
+#     'LIMBO_INJECT_FRB': '0',
+#     'LIMBO_NSIG': '6',
+#     'LIMBO_MAX_DM': '500',
+#     'LIMBO_MASK_DM': '300',
     'LIMBO_EXCLUDE_S': '0.05',
     'LIMBO_REMOVE_DIR': REMOVE_PATH,
     'LIMBO_SAVE_DIR': SAVE_PATH,
     'LIMBO_VOLT_SAVE_DIR': VOLT_SAVE_PATH,
     'LIMBO_VOLT_DIR': VOLT_DIR,
-#     'LIMBO_UPDATE_DATABASE': True
 }
 
 
@@ -62,10 +59,12 @@ def process_next(f):
         return
     notebook_out = os.path.join(NOTEBOOK_PATH, os.path.basename(filename)+'.ipynb')
     print(f'Processing {filename} -> {notebook_out}')
-
-    #subprocess.Popen(['jupyter', 'nbconvert', '--to', 'notebook', '--execute', TEMPLATE_FILE, '--output', notebook_out], env=context, shell=True)
-    print(f'jupyter nbconvert --to notebook --execute {TEMPLATE_FILE} --output {notebook_out}')
-    p = subprocess.call([f'jupyter nbconvert --to notebook --execute {TEMPLATE_FILE} --output {notebook_out}'], env=context, shell=True)
+    # Processing dependency based on the source observed in the file
+    src = limbo.io.read_header(filename)['Source']
+    print(f'jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 
+             'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}')
+    p = subprocess.call([f'jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 
+                            'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}'], env=context, shell=True)
     r.hdel(PURGATORY_KEY, f)
     print(f'Finished')
 
