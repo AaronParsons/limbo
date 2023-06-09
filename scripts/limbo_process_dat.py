@@ -61,9 +61,8 @@ def process_next(f):
     print(f'Processing {filename} -> {notebook_out}')
     # Processing dependency based on the source observed in the file
     src = limbo.io.read_header(filename)['Source']
-    print(f'jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}')
-    p = subprocess.call([f'jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 
-                            'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}'], env=context, shell=True)
+    print(f"jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_{src}_processing_template.ipynb')} --output {notebook_out}")
+    p = subprocess.call([f"jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}"], env=context, shell=True)
     r.hdel(PURGATORY_KEY, f)
     print(f'Finished')
 
