@@ -37,7 +37,7 @@ def can_point(ra, dec, jd=None):
 def select_src(tel, jd=None, srcs=SRCS):
     source = None
     for name, (ra, dec) in SRCS.items():
-        if tel.can_point(ra, dec, jd=jd):
+        if can_point(ra, dec, jd=jd):
             source = name
             break
     if source == None:
@@ -55,6 +55,7 @@ while True:
         t.stop()
     
     if current_src != src and src != None:
+        print(f'Starting observation of {src}')
         alt, az = t.calc_altaz(ra, dec)
         t.point(alt, az, wait=True, verbose=VERBOSE)
         t.track(ra, dec, verbose=VERBOSE)
