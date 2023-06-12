@@ -47,7 +47,7 @@ def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=
     return h
 
 def read_volt_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=24,
-                     dtype=np.dtype('>u2'), npol=2):
+                     dtype=np.dtype('>u1'), npol=2):
     '''Read header from a limbo file.'''
     start_t = read_start_time(filename)
     with open(filename, 'rb') as f:
@@ -81,7 +81,7 @@ def read_raw_data(filename, nspec=-1, skip=0, nchan=NCHAN_DEFAULT, infochan=12, 
 def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
               infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
-    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan, dtype=dtype)
     data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=nchan, infochan=infochan, dtype=dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
@@ -94,7 +94,7 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
 def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
                    infochan=24, dtype=np.dtype('>u1'), npol=2):
     '''Read header and data from a limbo file.'''
-    hdr = read_volt_header(filename, lo_hz=lo_hz, nchan=nchan, npol=npol)
+    hdr = read_volt_header(filename, lo_hz=lo_hz, nchan=nchan, npol=npol, dtype=dtype)
     data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=npol*nchan,
                          infochan=infochan, dtype=dtype)
     assert data.shape[0] > 0  # make sure we read some data
