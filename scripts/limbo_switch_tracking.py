@@ -64,33 +64,3 @@ while True:
         subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True)
     current_src = src
     time.sleep(10)
-    
-        
-        
-        
-    
-        
-        _ALT0, _AZ0 = t.calc_altaz(RA, DEC)
-        t.point(_ALT0, _AZ0, wait=True, verbose=VERBOSE)
-        print(f'{src} in range. Pointing to {_ALT0}, {_AZ0}.')
-        in_range = True
-    except AssertionError:
-        print(f'{src} out of range. Moving on to next source...')
-        
-    if in_range:
-        t.track(RA, DEC, verbose=VERBOSE)
-        already_recording = False
-        try:
-            while True:
-                record = int(r.hget('limbo', 'Record'))
-                if record and not already_recording:
-                    r.hset('limbo', 'Source', src)
-                    print('Turning on data recorders.')
-                    subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True)
-                    subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True)
-                    already_recording = True
-                if not record and already_recording:
-                    print('Turning off data recorders.')
-                    subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True)
-                    subprocess.run(['/usr/local/bin/disable_vol_record.sh'], shell=True)
-                    already_recording = False
