@@ -25,7 +25,7 @@ def dpss_filter(y, amat, fmat):
 
 def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
                  hch0=1173, hch1=1310, hsig=3,
-                 fmask=FREQ_MASK, freq_amat=FREQ_AMAT, freq_fmat=FREQ_FMAT):
+                 fmask=FREQ_MASK, freq_amat=FREQ_AMAT, freq_fmat=FREQ_FMAT, inpaint=True):
     '''Process LIMBO data by detrending, flagging, and performing a DM transform.
     Arguments:
         hdr: Header from LIMBO file
@@ -54,7 +54,10 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
     mdl = np.outer(tmdl, fmdl)
     diff_data = data - mdl
     full_mask = np.outer(tmask, fmask)
-    noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape) # Gaussian inpainting
+    if inpaint:
+        noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape) # Gaussian inpainting
+    else: 
+        noise = 0
     diff_data = np.where(full_mask, diff_data, noise)
     hot = np.sum(diff_data[:,hch0:hch1], axis=1)
     hnos = np.sqrt(np.sum(nos[hch0:hch1][fmask[hch0:hch1]]**2))
