@@ -85,7 +85,7 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
     data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=nchan, infochan=infochan, dtype=dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
-    hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime']
+    hdr['times'] = hdr['Time'] + np.arange(skip, skip + data.shape[0]) * hdr['inttime']
     t = Time(hdr['times'], format='unix', scale='utc')
     hdr['jds'] = t.jd
     hdr['date'] = t.strftime('%Y-%m-%d %H:%M:%S')[0]
@@ -102,7 +102,7 @@ def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT
     data.shape = (-1, NCHAN_DEFAULT, npol)  # polarization is the fastest array axis
     data_real = (data & 0xf0).view('>i1') >> 4
     data_imag = ((data << 4) & 0xf0).view('>i1') >> 4
-    hdr['times'] = hdr['Time'] + np.arange(data.shape[0]) * hdr['inttime'] # VS 'Time' = start time of file
+    hdr['times'] = hdr['Time'] + np.arange(skip, skip + data.shape[0]) * hdr['inttime'] # VS 'Time' = start time of file
     t = Time(hdr['times'], format='unix', scale='utc')
     hdr['jds'] = t.jd
     hdr['date'] = t.strftime('%Y-%m-%d %H:%M:%S')[0]
