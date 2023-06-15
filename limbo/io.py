@@ -68,7 +68,7 @@ def read_raw_data(filename, nspec=-1, skip=0, nchan=NCHAN_DEFAULT, infochan=12, 
     '''Read raw data from a limbo file.'''
     with open(filename, 'rb') as f:
         header_size = _get_header_size(f)
-        start = header_size + skip * dtype.itemsize * (nchan + infochan)
+        start = header_size + 4 + skip * dtype.itemsize * (nchan + infochan) # add 4 for first 4B header_size
         header = f.seek(start, 0)
         if nspec < 0:
             data = np.frombuffer(f.read(), dtype=dtype)
