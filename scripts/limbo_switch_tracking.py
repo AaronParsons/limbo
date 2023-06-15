@@ -64,4 +64,5 @@ while True:
         subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True)
         subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True)
     current_src = src
+    print('No source is visible right now.')
     time.sleep(10)
