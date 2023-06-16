@@ -29,7 +29,7 @@ def read_start_time(filename, dtype=np.dtype('<u4')):
         _, sec, _, usec = np.frombuffer(f.read(16), dtype=dtype)
     return float(sec) + float(usec) * 1e-6
 
-def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT)
+def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT):
     '''Read header from a limbo file.'''
     start_t = read_start_time(filename)
     with open(filename, 'rb') as f:
