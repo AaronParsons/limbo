@@ -26,7 +26,7 @@ def read_start_time(filename, dtype=np.dtype('<u4')):
         header_size = _get_header_size(f)
         f.seek(header_size + 4, 0)  # add size of "header_size" 
         # timestamp is 32b zeros, 32b sec, 32b zeros, 32b usec
-        _, sec, _, usec = np.frombuffer(f.read(16), dtype=dtype)
+        sec, _, usec = np.frombuffer(f.read(12), dtype=dtype)
     return float(sec) + float(usec) * 1e-6
 
 def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT):
