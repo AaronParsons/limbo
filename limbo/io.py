@@ -65,7 +65,7 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
               infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
     hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
-    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (npol * nchan + infochan))
+    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (nchan + infochan))
     data = read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
@@ -79,6 +79,7 @@ def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT
                    infochan=24, npol=2):
     '''Read header and data from a limbo file.'''
     hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
+    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (np.dtype('>u1').itemsize * (npol * nchan + infochan))
     # read data as longlong and perform endian swap to fix a missed endian
     # swap when voltage files are written from 64b network words
     data = read_raw_data(filename, hdr, nspec, skip, npol*nchan//8,
