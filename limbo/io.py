@@ -92,13 +92,15 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
     return hdr, data
 
 def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
-                   infochan=24, dtype=np.dtype('>u1'), npol=2):
+                   infochan=24, npol=2):
     '''Read header and data from a limbo file.'''
     hdr = read_volt_header(filename, lo_hz=lo_hz, nchan=nchan, npol=npol, dtype=dtype)
-    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=npol*nchan,
-                         infochan=infochan, dtype=dtype)
+    # read data as longlong and perform endian swap to fix a missed endian
+    # swap when voltage files are written from 64b network words
+    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=npol*nchan//8,
+                         infochan=infochan//8, dtype=np.dtype('>u8'))
     assert data.shape[0] > 0  # make sure we read some data
-    data = data[:, infochan:]
+    data = data[:, infochan//8:].byteswap().view('>u1')  # endian swap
     data.shape = (-1, NCHAN_DEFAULT, npol)  # polarization is the fastest array axis
     data_real = (data & 0xf0).view('>i1') >> 4
     data_imag = ((data << 4) & 0xf0).view('>i1') >> 4
