@@ -29,51 +29,34 @@ def read_start_time(filename, dtype=np.dtype('<u4')):
         _, sec, _, usec = np.frombuffer(f.read(16), dtype=dtype)
     return float(sec) + float(usec) * 1e-6
 
-def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
+def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT)
     '''Read header from a limbo file.'''
     start_t = read_start_time(filename)
     with open(filename, 'rb') as f:
         header_size = _get_header_size(f)
         h = f.read(header_size)
-        h = json.loads(h[:h.find(0x00)])
-        h['filename'] = filename
-        h['sample_clock'] = h.pop('SampleFreq') * 1e6
-        h['freqs'] = utils.calc_freqs(h['sample_clock'], lo_hz, nchan)
-        h['inttime'] = utils.calc_inttime(h['sample_clock'], h['AccLen'], nchan)
-        h['Time_created'] = h['Time']
-        h['Time'] = start_t
-    size = os.path.getsize(filename)
-    h['nspec'] = (size - header_size) // (dtype.itemsize * (nchan + infochan))
+    h = json.loads(h[:h.find(0x00)])
+    h['filename'] = filename
+    h['sample_clock'] = h.pop('SampleFreq') * 1e6
+    h['freqs'] = utils.calc_freqs(h['sample_clock'], lo_hz, nchan)
+    h['inttime'] = utils.calc_inttime(h['sample_clock'], h['AccLen'], nchan)
+    h['Time_created'] = h['Time']
+    h['Time'] = start_t
+    h['filesize'] = os.path.getsize(filename)
+    h['data_start'] = header_size + 4  # add 4 for first 4B header_size
     return h
 
-def read_volt_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=24,
-                     dtype=np.dtype('>u1'), npol=2):
-    '''Read header from a limbo file.'''
-    start_t = read_start_time(filename)
-    with open(filename, 'rb') as f:
-        header_size = _get_header_size(f)
-        h = f.read(header_size)
-        h = json.loads(h[:h.find(0x00)])
-        h['filename'] = filename
-        h['sample_clock'] = h.pop('SampleFreq') * 1e6
-        h['freqs'] = utils.calc_freqs(h['sample_clock'], lo_hz, nchan)
-        h['inttime'] = utils.calc_inttime(h['sample_clock'], 1, nchan)
-        h['Time_created'] = h['Time']
-        h['Time'] = start_t
-    size = os.path.getsize(filename)
-    h['nspec'] = (size - header_size) // (dtype.itemsize * (npol * nchan + infochan))
-    return h
-
-def read_raw_data(filename, nspec=-1, skip=0, nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
+def read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype):
     '''Read raw data from a limbo file.'''
+    spec_len = dtype.itemsize * (nchan + infochan)
     with open(filename, 'rb') as f:
-        header_size = _get_header_size(f)
-        start = header_size + 4 + skip * dtype.itemsize * (nchan + infochan) # add 4 for first 4B header_size
-        header = f.seek(start, 0)
+        start = hdr['data_start']
+        start += skip * spec_len
+        f.seek(start, 0)
         if nspec < 0:
             data = np.frombuffer(f.read(), dtype=dtype)
         else:
-            nbytes = nspec * dtype.itemsize * (nchan + infochan)
+            nbytes = nspec * spec_len
             data = np.frombuffer(f.read(nbytes), dtype=dtype)
     data.shape = (-1, infochan + nchan)
     return data
@@ -81,8 +64,9 @@ def read_raw_data(filename, nspec=-1, skip=0, nchan=NCHAN_DEFAULT, infochan=12, 
 def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
               infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
-    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan, dtype=dtype)
-    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=nchan, infochan=infochan, dtype=dtype)
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
+    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (npol * nchan + infochan))
+    data = read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
     hdr['times'] = hdr['Time'] + np.arange(skip, skip + data.shape[0]) * hdr['inttime']
@@ -94,11 +78,11 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
 def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
                    infochan=24, npol=2):
     '''Read header and data from a limbo file.'''
-    hdr = read_volt_header(filename, lo_hz=lo_hz, nchan=nchan, npol=npol, dtype=dtype)
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
     # read data as longlong and perform endian swap to fix a missed endian
     # swap when voltage files are written from 64b network words
-    data = read_raw_data(filename, nspec=nspec, skip=skip, nchan=npol*nchan//8,
-                         infochan=infochan//8, dtype=np.dtype('>u8'))
+    data = read_raw_data(filename, hdr, nspec, skip, npol*nchan//8,
+                         infochan//8, np.dtype('>u8'))
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan//8:].byteswap().view('>u1')  # endian swap
     data.shape = (-1, NCHAN_DEFAULT, npol)  # polarization is the fastest array axis
