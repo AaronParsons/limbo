@@ -7,16 +7,23 @@ from .fdmt import FDMT
 BANDPASS_FILE = os.path.join(os.path.dirname(__file__),'data', 'bandpass_v002.npz')
 BANDPASS_NPZ = np.load(BANDPASS_FILE)
 FMDL = BANDPASS_NPZ['mdl']
+FMDL = np.roll(FMDL, shift=-2)
 
 CAL_FILE = os.path.join(os.path.dirname(__file__),'data', 'calibration_v001.npz')
 CAL_NPZ = np.load(CAL_FILE)
 CALGAIN = CAL_NPZ['cnt2jy']
+CALGAIN = np.roll(CALGAIN, shift=-2)
 
-FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v002.npz')
+
+FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v003.npz')
 FREQ_MASK_NPZ = np.load(FREQMASK_FILE)
 FREQ_MASK = FREQ_MASK_NPZ['mask']
 FREQ_AMAT = FREQ_MASK_NPZ['amat']
 FREQ_FMAT = FREQ_MASK_NPZ['fmat']
+
+# FREQ_MASK = np.roll(FREQ_MASK, shift=-2) # Shift masks by 2 channels
+# FREQ_AMAT = np.roll(FREQ_AMAT, shift=-2, axis=[0, 1])
+# FREQ_FMAT = np.roll(FREQ_FMAT, shift=-2, axis=[0, 1])
 
 def dpss_filter(y, amat, fmat):
     '''Apply the provided DPSS filter matrices to data.'''
@@ -24,7 +31,7 @@ def dpss_filter(y, amat, fmat):
     return model.real
 
 def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
-                 hch0=1173, hch1=1310, hsig=3,
+                 hch0=1171, hch1=1308, hsig=3,
                  fmask=FREQ_MASK, freq_amat=FREQ_AMAT, freq_fmat=FREQ_FMAT, inpaint=True):
     '''Process LIMBO data by detrending, flagging, and performing a DM transform.
     Arguments:
