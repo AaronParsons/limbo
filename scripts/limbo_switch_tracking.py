@@ -45,24 +45,35 @@ def select_src(tel, jd=None, srcs=SRCS):
     return source, (ra, dec)
 
 current_src = None
-while True:
-    src, (ra, dec) = select_src(t)
+try:
+    while True:
+        src, (ra, dec) = select_src(t)
+        
+        if current_src != None and current_src != src:
+            print('Turning off data recorders.')
+            subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True)
+            subprocess.run(['/usr/local/bin/disable_vol_record.sh'], shell=True)
+            t.stop()
+        
+        if current_src != src and src != None:
+            print(f'Starting observation of {src}')
+            alt, az = t.calc_altaz(ra, dec)
+            t.point(alt, az, wait=True, verbose=VERBOSE)
+            t.track(ra, dec, verbose=VERBOSE)
+            r.hset('limbo', 'Source', src)
+            print('Turning on data recorders.')
+            subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True)
+            subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True)
+        
+        if current_src == None and src == None:
+            print('No source is visible.')
+
+        current_src = src
+        time.sleep(10)
     
-    if current_src != None and current_src != src:
-        print('Turning off data recorders.')
-        subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True)
-        subprocess.run(['/usr/local/bin/disable_vol_record.sh'], shell=True)
-        t.stop()
-    
-    if current_src != src and src != None:
-        print(f'Starting observation of {src}')
-        alt, az = t.calc_altaz(ra, dec)
-        t.point(alt, az, wait=True, verbose=VERBOSE)
-        t.track(ra, dec, verbose=VERBOSE)
-        r.hset('limbo', 'Source', src)
-        print('Turning on data recorders.')
-        subprocess.run(['/usr/local/bin/enable_record.sh'], shell=True)
-        subprocess.run(['/usr/local/bin/enable_vol_record.sh'], shell=True)
-    current_src = src
-    print('No source is visible right now.')
-    time.sleep(10)
+except(KeyboardInterrupt):
+    print('Turning off data recorders and ending observation.')
+    subprocess.run(['/usr/local/bin/disable_record.sh'], shell=True)
+    subprocess.run(['/usr/local/bin/disable_vol_record.sh'], shell=True)
+    t.stop()
+        
