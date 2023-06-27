@@ -29,7 +29,7 @@ def read_start_time(filename, dtype=np.dtype('<u4')):
         sec, _, usec = np.frombuffer(f.read(12), dtype=dtype)
     return float(sec) + float(usec) * 1e-6
 
-def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT):
+def read_raw_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT):
     '''Read header from a limbo file.'''
     start_t = read_start_time(filename)
     with open(filename, 'rb') as f:
@@ -46,6 +46,30 @@ def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT):
     h['filesize'] = os.path.getsize(filename)
     h['data_start'] = header_size + 4  # add 4 for first 4B header_size
     return h
+
+def read_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=12, dtype=np.dtype('>u2')):
+    hdr = read_raw_header(filename, lo_hz=lo_hz, nchan=nchan)
+    hdr['nspec'] = calc_nspec(hdr, infochan=infochan, dtype=dtype) 
+    hdr['inttime'] = utils.calc_inttime(hdr['sample_clock'], hdr['AccLen'], nchan)
+    return hdr 
+
+def read_volt_header(filename, lo_hz=1350e6, nchan=NCHAN_DEFAULT, infochan=24, dtype=np.dtype('>u1'), npol=2):
+    hdr = read_raw_header(filename, lo_hz=lo_hz, nchan=nchan)
+    hdr['AccLen'] = 1 # Overwriting for voltage files  
+    hdr['inttime'] = utils.calc_inttime(hdr['sample_clock'], hdr['AccLen'], nchan)
+    hdr['nspec'] = calc_nspec_volt(hdr, infochan=infochan, dtype=np.dtype('>u1'), npol=npol)
+    return hdr 
+
+def calc_nspec(hdr, infochan=12, dtype=np.dtype('>u2')):
+    nchan = hdr['freqs'].size
+    nspec = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (nchan + infochan))
+    return nspec
+
+def calc_nspec_volt(hdr, infochan=24, dtype=np.dtype('>u1'), npol=2):
+    nchan = hdr['freqs'].size
+    nspec = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (nchan * npol + infochan))
+    return nspec
+
 
 def read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype):
     '''Read raw data from a limbo file.'''
@@ -65,9 +89,7 @@ def read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype):
 def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
               infochan=12, dtype=np.dtype('>u2')):
     '''Read header and data from a limbo file.'''
-    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
-    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (dtype.itemsize * (nchan + infochan))
-    hdr['inttime'] = utils.calc_inttime(hdr['sample_clock'], hdr['AccLen'], nchan)
+    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan, infochan=infochan, dtype=dtype)
     data = read_raw_data(filename, hdr, nspec, skip, nchan, infochan, dtype)
     assert data.shape[0] > 0  # make sure we read some data
     data = data[:, infochan:]
@@ -80,10 +102,7 @@ def read_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
 def read_volt_file(filename, nspec=-1, skip=0, lo_hz=1350e6, nchan=NCHAN_DEFAULT,
                    infochan=24, npol=2):
     '''Read header and data from a limbo file.'''
-    hdr = read_header(filename, lo_hz=lo_hz, nchan=nchan)
-    hdr['AccLen'] = 1 # Overwriting for voltage files  
-    hdr['inttime'] = utils.calc_inttime(hdr['sample_clock'], hdr['AccLen'], nchan)
-    hdr['nspec'] = (hdr['filesize'] - hdr['data_start']) // (np.dtype('>u1').itemsize * (npol * nchan + infochan))
+    hdr = read_volt_header(filename, lo_hz=lo_hz, nchan=nchan, infochan=infochan, dtype=np.dtype('>u1'), npol=npol)
     # read data as longlong and perform endian swap to fix a missed endian
     # swap when voltage files are written from 64b network words
     data = read_raw_data(filename, hdr, nspec, skip, npol*nchan//8,
