@@ -11,6 +11,7 @@ REDISHOST = 'localhost'
 REDIS_RAW_PSPEC_FILES = 'limbo:raw_pspec_files'
 PURGATORY_KEY = 'limbo:purgatory'
 DATA_PATH = '/home/obs/data'
+# DATA_PATH = '/mnt/data02' # temp for when reprocessing old data
 REMOVE_PATH = '/mnt/data03'
 SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
@@ -60,7 +61,14 @@ def process_next(f):
     notebook_out = os.path.join(NOTEBOOK_PATH, os.path.basename(filename)+'.ipynb')
     print(f'Processing {filename} -> {notebook_out}')
     # Processing dependency based on the source observed in the file
-    src = limbo.io.read_header(filename)['Source']
+    try:
+        src = limbo.io.read_header(filename)['Source']
+    except(KeyError):
+        ra, dec = limbo.io.read_header(filename)['Target_RA_Deg'], limbo.io.read_header(filename)['Target_DEC_Deg']
+        if ra == limbo.telescope.SGR_RA and dec == limbo.telescope.SGR_DEC:
+            src = 'sgr1935'
+        elif ra == limbo.telescope.CRAB_RA and dec == limbo.telescope.CRAB_DEC:
+            src = 'crab'
     print(f"jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_{src}_processing_template.ipynb')} --output {notebook_out}")
     p = subprocess.call([f"jupyter nbconvert --to notebook --execute {os.path.join(os.path.dirname(limbo.__file__), 'data', 'limbo_'+src+'_processing_template.ipynb')} --output {notebook_out}"], env=context, shell=True)
     r.hdel(PURGATORY_KEY, f)
@@ -74,7 +82,7 @@ if __name__ == '__main__':
     qlen = r.llen(REDIS_RAW_PSPEC_FILES)
     print(f'Starting LIMBO processing. Queue length={qlen}')
     children = {}
-    nworkers = 12
+    nworkers = 8
     try:
         while True:
             qlen = r.llen(REDIS_RAW_PSPEC_FILES)
