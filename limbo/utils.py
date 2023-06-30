@@ -1,6 +1,7 @@
 '''Utility functions for LIMBO'''
 
 import numpy as np
+from scipy.fft import rfft, irfft
 
 def calc_inttime(sample_freq_hz, acc_len, nchan):
     '''Calculate integration time [s] from sample_freq and acc_len.'''
@@ -29,10 +30,22 @@ def DM_delay(DM, freq):
     """
     return np.float32(DM * DM_CONST) / freq**2
 
-def dedisperse(profile, DM, times, freqs):
-    _ffreq = np.fft.rfftfreq(times.size, times[1] - times[0])
-    delays = DM_delay(DM, freqs) - DM_delay(DM, freqs[-1])
-    phs = np.exp(2j * np.pi * np.outer(_ffreq, delays))
-    _profile = np.fft.rfft(profile, axis=0)
-    profile = np.fft.irfft(_profile * phs, axis=0)
+def dedisperse(profile, dm, freqs, inttime, oversample=1, dtype=None):
+    if dtype is None:
+        dtype = 1
+        if profile.dtype.itemsize > 4:
+            dtype = 2
+    assert dtype in (1, 2)
+    if dtype == 1:
+        dtype = 'float32'
+        cdtype = 'complex64'
+    else:
+        dtype = 'float64'
+        cdtype = 'complex128'
+    _ffreq = np.fft.rfftfreq(profile.shape[0], inttime).astype(dtype)
+    delays = DM_delay(dm, freqs) - DM_delay(dm, freqs[-1])
+    delays = delays.astype(dtype)
+    phs = np.exp(np.asarray(2j * np.pi).astype(cdtype) * np.outer(_ffreq, delays))
+    _profile = rfft(profile, axis=0)
+    profile = irfft(_profile * phs, oversample * profile.shape[0], axis=0) * oversample
     return profile
