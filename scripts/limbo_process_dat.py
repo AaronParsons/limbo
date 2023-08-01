@@ -11,24 +11,21 @@ REDISHOST = 'localhost'
 REDIS_RAW_PSPEC_FILES = 'limbo:raw_pspec_files'
 PURGATORY_KEY = 'limbo:purgatory'
 DATA_PATH = '/home/obs/data'
-# DATA_PATH = '/mnt/data02' # temp for when reprocessing old data
 REMOVE_PATH = '/mnt/data03'
 SAVE_PATH = os.path.join(DATA_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
 VOLT_DIR = '/mnt/ramdisk'
 VOLT_SAVE_PATH = '/mnt/data01'
-UPDATE_DATABASE = True
-VOLT_ANALYSIS = False
+UPDATE_DATABASE = 'True'
 
 os_env = {
-    'LIMBO_PROCFILE': None,
+    'LIMBO_PROCFILE': 'None',
     'LIMBO_EXCLUDE_S': '0.05',
     'LIMBO_REMOVE_DIR': REMOVE_PATH,
     'LIMBO_SAVE_DIR': SAVE_PATH,
     'LIMBO_VOLT_SAVE_DIR': VOLT_SAVE_PATH,
     'LIMBO_VOLT_DIR': VOLT_DIR,
-    'LIMBO_UPDATE_DATABASE': UPDATE DATABASE,
-    'LIMBO_VOLT_ANALYSIS':, VOLT_ANALYSIS
+    'LIMBO_UPDATE_DATABASE': UPDATE_DATABASE
 }
 
 

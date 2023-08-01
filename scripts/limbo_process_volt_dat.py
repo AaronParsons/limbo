@@ -11,7 +11,7 @@ REDISHOST = 'localhost'
 REDIS_PSPEC_FILES = 'limbo:pspec_to_volt'
 PURGATORY_KEY = 'limbo:voltproc_purgatory'
 DATA_PATH = '/home/obs/data/save/'
-VOLT_NOTEBOOK_PATH = '/home/obs/data/notebook/voltbook
+VOLT_NOTEBOOK_PATH = '/home/obs/data/notebook/voltbook'
 VOLT_DIR = '/mnt/data01/'
 VOLT_SAVE_PATH = os.path.join(VOLT_NOTEBOOK_PATH, 'recovered')
 VOLT_REMOVE_PATH = os.path.join(VOLT_NOTEBOOK_PATH, 'nope')
@@ -43,7 +43,7 @@ def filter_done(f, thd):
 def process_next(f):
     filename = os.path.join(DATA_PATH, f)
     context = os_env.copy()
-    context['LIMBO_PROCFILE'] = filename
+    context['LIMBO_PSPEC_FILE'] = filename
     os.environ.update(context)
     if not os.path.exists(filename):
         print(f'Did not find {filename}.')
