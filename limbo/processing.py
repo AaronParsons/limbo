@@ -95,36 +95,38 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
     return dmt
 
 class ProcessVoltage:
-    def __init__(self, DM):
+    def __init__(self, DM, volt_files, vhdr, hdr):
         self.DM = DM
+        self.volt_files = volt_files
+        self.vhdr = vhdr
+        self.hdr = hdr
     
-    def _get_volt_analysis_params(self, t_events, vhdr, pad=2000):
+    def _get_volt_analysis_params(self, t_events, pad=2000):
         """
         Get nessecary volt file params to be able to view relavent parts of pulse.
         XXX Only works for events that are sequential. Will need to be revised to include
             possibility of multiple events in one file. XXX
         Arguments:
             t_events: time of events in power spectra
-            vhdr: voltage file header
             pad: amount to pad data by
         Returns:
             window: window containing length of pulse
             skip: how many spectra to skip in voltage file glob
         """
-        skip = np.floor((t_events - vhdr['Time']) / vhdr['inttime']).astype(int) - pad
-        max_delay = DM_delay(self.DM, vhdr['freqs'][0]) - DM_delay(self.DM, vhdr['freqs'][-1])
-        nspec_delay = max_delay / vhdr['inttime']
+        skip = np.floor((t_events - self.vhdr['Time']) / self.vhdr['inttime']).astype(int) - pad
+        max_delay = DM_delay(self.DM, self.vhdr['freqs'][0]) - DM_delay(self.DM, self.vhdr['freqs'][-1])
+        nspec_delay = max_delay / self.vhdr['inttime']
         nspec_read = int(np.ceil(skip[-1] + nspec_delay) + 2*pad) # XXX
         window = nspec_read - skip[0] # XXX
         return window, skip[0]
     
-    def find_volt_window(self, volt_files, t_events, vhdr, pad=2000):
+    def find_volt_window(self, t_events, vhdr, pad=2000):
         """
         Return the complex spectra that contains the length of the pulse.
         """
-        window, skip = self._get_volt_analysis_params(t_events=t_events, vhdr=vhdr, pad=pad)
-        vnspec = vhdr['nspec']
-        volt_files = sorted(volt_files)
+        window, skip = self._get_volt_analysis_params(t_events=t_events, pad=pad)
+        vnspec = self.vhdr['nspec']
+        volt_files = sorted(self.volt_files)
         for i, file in enumerate(volt_files):
             if skip > vnspec * (i+1):
                 continue
@@ -160,24 +162,24 @@ class ProcessVoltage:
         vdata = np.mean(vdata, axis=1)
         return vdata
     
-    def get_volt_times(self, volt_files, lo_hz=1350e6, nchan=2048, infochan=24, dtype=np.dtype('>u1'), npol=2):
+    def get_volt_times(self, lo_hz=1350e6, nchan=2048, infochan=24, dtype=np.dtype('>u1'), npol=2):
         """ Get Unix times of all voltage files. """
         times = []
-        for file in volt_files:
+        for file in self.volt_files:
             hdr = read_volt_header(file, lo_hz=lo_hz, nchan=nchan, infochan=infochan, dtype=dtype, npol=npol)
             ts = hdr['Time'] + np.arange(0, hdr['nspec']) * hdr['inttime']
             times.append(ts)
         return np.concatenate(times, axis=0)
     
-    def snr_dedispersion(self, vdmt, vhdr, pmDM=10, ntrials=128, sum_int=1, resamp_factor=1, ch0=398, ch1=398+1024):
+    def snr_dedispersion(self, vdmt, pmDM=10, ntrials=128, sum_int=1, resamp_factor=1, ch0=398, ch1=398+1024):
         """ Dedisperse in a way that maximizes the SNR. Returns zscore and DM. """
         dms = np.linspace(self.DM - pmDM, self.DM + pmDM, ntrials, endpoint=False)
-        vcal_data = vdmt['diff'] * CALGAIN * np.sqrt(hdr['inttime'] / vhdr['inttime'])
-        vdata_summed = vp.sum_down(vcal_data, sum_int=sum_int)
+        vcal_data = vdmt['diff'] * CALGAIN * np.sqrt(self.hdr['inttime'] / self.vhdr['inttime'])
+        vdata_summed = self.sum_down(vcal_data, sum_int=sum_int)
         maxz = 0
         maxz_dm = 0
         for dm in tqdm(dms):
-            vprofile = dedisperse(vdata_summed, dm, vhdr['freqs'], sum_int * vhdr['inttime'], resamp_factor)
+            vprofile = dedisperse(vdata_summed, dm, self.vhdr['freqs'], sum_int * self.vhdr['inttime'], resamp_factor)
             avg_vprofile = np.mean(vprofile[:, ch0:ch1], axis=-1)
             vzscore = (avg_vprofile - np.mean(avg_vprofile)) / np.std(avg_vprofile)
             maxz0 = np.max(vzscore)
