@@ -1,8 +1,9 @@
 import numpy as np
 import os
 from .fdmt import FDMT
-from .io import read_volt_file
-from .utils import DM_delay
+from .io import read_volt_file, read_volt_header
+from .utils import DM_delay, dedisperse
+from tqdm import tqdm
 
 PRECISION = 1
 
@@ -137,7 +138,7 @@ class ProcessVoltage:
                     data_real = np.concatenate((dr0, dr1), axis=0)
                     data_imag = np.concatenate((di0, di1), axis=0)
                 break
-        return data_real, data_imag
+        return data_real, data_imag, window, skip
     
     def sum_pols(self, data_real, data_imag):
         """ Sum polarizations """
@@ -158,6 +159,34 @@ class ProcessVoltage:
         vdata.shape = (-1, sum_int, vdata.shape[1])
         vdata = np.mean(vdata, axis=1)
         return vdata
+    
+    def get_volt_times(self, volt_files, lo_hz=1350e6, nchan=2048, infochan=24, dtype=np.dtype('>u1'), npol=2):
+        """ Get Unix times of all voltage files. """
+        times = []
+        for file in volt_files:
+            hdr = read_volt_header(file, lo_hz=lo_hz, nchan=nchan, infochan=infochan, dtype=dtype, npol=npol)
+            ts = hdr['Time'] + np.arange(0, hdr['nspec']) * hdr['inttime']
+            times.append(ts)
+        return np.concatenate(times, axis=0)
+    
+    def snr_dedispersion(self, vdmt, vhdr, pmDM=10, ntrials=128, sum_int=1, resamp_factor=1, ch0=398, ch1=398+1024):
+        """ Dedisperse in a way that maximizes the SNR. Returns zscore and DM. """
+        dms = np.linspace(self.DM - pmDM, self.DM + pmDM, ntrials, endpoint=False)
+        vcal_data = vdmt['diff'] * CALGAIN * np.sqrt(hdr['inttime'] / vhdr['inttime'])
+        vdata_summed = vp.sum_down(vcal_data, sum_int=sum_int)
+        maxz = 0
+        maxz_dm = 0
+        for dm in tqdm(dms):
+            vprofile = dedisperse(vdata_summed, dm, vhdr['freqs'], sum_int * vhdr['inttime'], resamp_factor)
+            avg_vprofile = np.mean(vprofile[:, ch0:ch1], axis=-1)
+            vzscore = (avg_vprofile - np.mean(avg_vprofile)) / np.std(avg_vprofile)
+            maxz0 = np.max(vzscore)
+            if maxz0 > maxz:
+                maxz = maxz0
+                maxz_dm = dm
+            else:
+                continue
+        return maxz, maxz_dm
 
     # XXX Figure out best way to compute Stoke params:
     # def compute_stokes_params(volt0, volt1):
