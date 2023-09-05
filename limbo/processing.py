@@ -4,6 +4,7 @@ from .fdmt import FDMT
 from .io import read_volt_file, read_volt_header
 from .utils import DM_delay, dedisperse
 from tqdm import tqdm
+from scipy.special import erf
 
 PRECISION = 1
 
@@ -43,10 +44,10 @@ def dpss_filter(y, amat, fmat):
     model = amat @ (fmat @ y)
     return model.real
 
-def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
-                 hch0=1171, hch1=1308, hsig=3, dtype=DTYPE,
-                 fmask=FREQ_MASK, freq_amat=FREQ_AMAT, freq_fmat=FREQ_FMAT,
-                 do_dmt=True, inpaint=True):
+def process_data(hdr, data, ch0=400, ch1=1424, gsig=4, maxdm=500, hch0=1171, hch1=1308,
+    hsig=3, dtype='float32', fmask=FREQ_MASK, freq_amat=FREQ_AMAT,
+    freq_fmat=FREQ_FMAT, nsig=3,
+    do_dmt=True, inpaint=True):
     '''Process LIMBO data by detrending, flagging, and performing a DM transform.
     Arguments:
         hdr: Header from LIMBO file
@@ -80,12 +81,25 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
         noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape).astype(dtype) # Gaussian inpainting
     else: 
         noise = 0
-    diff_data = np.where(full_mask, diff_data, noise)
     hot = np.sum(diff_data[:,hch0:hch1], axis=1)
     hnos = np.sqrt(np.sum(nos[hch0:hch1][fmask[hch0:hch1]]**2))
     thot = np.where(hot > hsig * hnos)
     diff_data[thot,hch0:hch1] = 0
     full_mask[thot,hch0:hch1] = 0
+    
+    p = erf(nsig / np.sqrt(2))
+    tmp_mask = np.where(diff_data > 2 * nos, 0, full_mask)
+    flag_frac = np.mean(tmp_mask, axis=0)
+    med, med_nsig = np.percentile(flag_frac, [50, 50+100*p/2])
+    fmask = np.where(flag_frac <= 2 * med - med_nsig, 0, fmask)
+    tmp_mask = tmp_mask * fmask[np.newaxis, :]
+    flag_frac = np.mean(tmp_mask, axis=1)
+    med = np.median(flag_frac)
+    tmask = np.where(flag_frac <= 0.9 * med, 0, tmask)
+    
+    full_mask = full_mask * np.outer(tmask, fmask)
+    
+    diff_data = np.where(full_mask, diff_data, noise)
     dmt = {'fmdl': fmdl, 'tmdl': tmdl, 'diff': diff_data, 'tmask': tmask, 'fmask': fmask}
     if do_dmt:
         fdmt = FDMT(hdr['freqs'][ch0:ch1], hdr['times'], maxDM=maxdm)
@@ -93,6 +107,7 @@ def process_data(hdr, data, ch0=400, ch1=400+1024, gsig=4, maxdm=500,
         dmt['dmt'] = dm_vs_t
         dmt['dms'] = fdmt.dms
     return dmt
+
 
 class ProcessVoltage:
     def __init__(self, DM, volt_files, vhdr, hdr):
