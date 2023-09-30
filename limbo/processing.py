@@ -65,42 +65,54 @@ def process_data(hdr, data, ch0=400, ch1=1424, gsig=4, maxdm=500, hch0=1171, hch
     Returns:
         dmt: Dictionary with keys 'dmt', 'dms', 'fmdl', 'tmdl', 'diff', 'tmask', 'fmask'.
     '''
-    spec = np.mean(data, axis=0).astype(dtype)
+    data = data.astype(dtype)  # prevent datatype promotion
+    # compute smooth, time-averaged fmdl: our model of stable spectrum
+    spec = np.mean(data, axis=0)
     fmdl = dpss_filter(spec * fmask.astype(dtype), freq_amat, freq_fmat)
-    # compute noise from smoothed spectrum; assumes same gain for all t in file
+    fmdl = fmdl.astype(dtype)  # prevent datatype promotion
+    # estimate thermal (rms) noise level for each chan from fmdl
+    # assumes same gain for all t in file
     nos = fmdl / hdr['AccLen']**0.5
-    tnos = 1 / hdr['AccLen']**0.5 / (ch1-ch0)**0.5
-    tmdl = np.sum(data[:,ch0:ch1][:,fmask[ch0:ch1]], axis=1, keepdims=False) / np.sum(fmdl[ch0:ch1][fmask[ch0:ch1]])
-    tmdl = tmdl.astype(dtype)
-    tmask = np.zeros(tmdl.shape, dtype=bool)
-    tmask[1:-1] = np.abs(tmdl[1:-1] - 0.5*(tmdl[2:] + tmdl[:-2])) < gsig * (tnos * np.sqrt(1+2*0.5**2))
-    mdl = np.outer(tmdl, fmdl)
-    diff_data = data.astype(dtype) - mdl
+    # estimate power level vs time tmdl, assuming fmdl spectral shape
+    # moves # up and down with each integration
+    tmdl = np.sum(data[:,ch0:ch1][:,fmask[ch0:ch1]], axis=1) / np.sum(fmdl[ch0:ch1][fmask[ch0:ch1]])
+    tmdl = tmdl.astype(dtype)  # prevent datatype promotion
+    mdl = np.outer(tmdl, fmdl)  # 1st smoothed, time-variable power model
+    # iterate tmdl fit once to reject outliers that skew power level est
+    zscore = (data - mdl) / nos
+    reject = np.where(zscore > nsig, 0, fmask[np.newaxis,:])
+    tmdl = np.sum(data[:,ch0:ch1] * reject[:,ch0:ch1], axis=1) / np.sum(reject[:,ch0:ch1] * fmdl[ch0:ch1], axis=1)
+    tmdl = tmdl.astype(dtype)  # prevent datatype promotion
+    mdl = np.outer(tmdl, fmdl)  # 2nd smoothed, time-variable power model
+    # compute a signed zscore**2 (tzsq) proportional to log likelihood of 
+    # high outliers
+    diff_data = data - mdl
+    zscore = diff_data / nos
+    zsq = np.abs(zscore) * zscore
+    tmask = np.ones(tmdl.size, dtype=fmask.dtype)
     full_mask = np.outer(tmask, fmask)
-    if inpaint:
-        noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape).astype(dtype) # Gaussian inpainting
+    # compute power in 'hot' region and flag separately
+    hzsq = np.mean(zsq[:,hch0:hch1], axis=1)
+    full_mask[hzsq > hsig**2, hch0:hch1] = 0
+    # remove outlying times by flagging for gsig outliers from in
+    # median log likelihood
+    tzsq = np.sum(full_mask[:,ch0:ch1] * zsq[:,ch0:ch1], axis=1) / np.sum(full_mask[:,ch0:ch1], axis=1)
+    tzsq -= np.median(tzsq)
+    tmask[tzsq > gsig * np.median(np.abs(tzsq))] = 0
+    full_mask[~tmask, :] = 0
+    # finally, remove any remaining freqs that are persistently bad
+    fzsq = np.sum(full_mask * zsq, axis=0) / np.sum(full_mask, axis=0)
+    fmask[np.abs(fzsq) > 0.5] = 0
+    full_mask[:, ~fmask] = 0
+    
+    if inpaint:  # inpaint diff data with gaussian noise
+        noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape).astype(dtype)  # XXX this is a bit slow
     else: 
-        noise = 0
-    hot = np.sum(diff_data[:,hch0:hch1], axis=1)
-    hnos = np.sqrt(np.sum(nos[hch0:hch1][fmask[hch0:hch1]]**2))
-    thot = np.where(hot > hsig * hnos)
-    diff_data[thot,hch0:hch1] = 0
-    full_mask[thot,hch0:hch1] = 0
+        diff_data *= full_mask
     
-    p = erf(nsig / np.sqrt(2))
-    tmp_mask = np.where(diff_data > 2 * nos, 0, full_mask)
-    flag_frac = np.mean(tmp_mask, axis=0)
-    med, med_nsig = np.percentile(flag_frac, [50, 50+100*p/2])
-    fmask = np.where(flag_frac <= 2 * med - med_nsig, 0, fmask)
-    tmp_mask = tmp_mask * fmask[np.newaxis, :]
-    flag_frac = np.mean(tmp_mask, axis=1)
-    med = np.median(flag_frac)
-    tmask = np.where(flag_frac <= 0.9 * med, 0, tmask)
-    
-    full_mask = full_mask * np.outer(tmask, fmask)
-    
-    diff_data = np.where(full_mask, diff_data, noise)
-    dmt = {'fmdl': fmdl, 'tmdl': tmdl, 'diff': diff_data, 'tmask': tmask, 'fmask': fmask}
+    dmt = {'fmdl': fmdl, 'tmdl': tmdl,
+           'diff': diff_data, 'zscore': zscore, 'mask': full_mask,
+           'tmask': tmask, 'fmask': fmask}
     if do_dmt:
         fdmt = FDMT(hdr['freqs'][ch0:ch1], hdr['times'], maxDM=maxdm)
         dm_vs_t = fdmt.apply(diff_data[:,ch0:ch1])
