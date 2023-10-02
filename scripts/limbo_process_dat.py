@@ -10,12 +10,16 @@ import subprocess
 REDISHOST = 'localhost'
 REDIS_RAW_PSPEC_FILES = 'limbo:raw_pspec_files'
 PURGATORY_KEY = 'limbo:purgatory'
-DATA_PATH = '/home/obs/data'
-REMOVE_PATH = '/mnt/data03'
-SAVE_PATH = os.path.join(DATA_PATH, 'save')
-NOTEBOOK_PATH = os.path.join(DATA_PATH, 'notebook')
-VOLT_DIR = '/mnt/ramdisk'
-VOLT_SAVE_PATH = '/mnt/data01'
+MAIN_PATH = '/home/obs/data' # Where saved files and their notebooks go
+#DATA_PATH = '/home/obs/data'
+DATA_PATH = '/mnt/data01' # Where data is stored for reprocessing
+REMOVE_PATH = '/mnt/data03' # Where reprocessed data goes
+SAVE_PATH = os.path.join(MAIN_PATH, 'save')
+NOTEBOOK_PATH = os.path.join(MAIN_PATH, 'notebook')
+# VOLT_DIR = '/mnt/ramdisk'
+# VOLT_SAVE_PATH = '/mnt/data01'
+VOLT_DIR = 'None'
+VOLT_SAVE_PATH = 'None'
 UPDATE_DATABASE = 'True'
 
 os_env = {
