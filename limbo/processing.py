@@ -107,6 +107,7 @@ def process_data(hdr, data, ch0=400, ch1=1424, gsig=4, maxdm=500, hch0=1171, hch
     
     if inpaint:  # inpaint diff data with gaussian noise
         noise = np.random.normal(loc=0, scale=np.abs(nos), size=diff_data.shape).astype(dtype)  # XXX this is a bit slow
+        diff_data = np.where(full_mask, diff_data, noise)
     else: 
         diff_data *= full_mask
     
