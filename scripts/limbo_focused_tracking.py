@@ -31,8 +31,7 @@ sources = {
         'crab':{'RA':telescope.CRAB_RA, 'DEC':telescope.CRAB_DEC},
         'sgr1935':{'RA':telescope.SGR_RA, 'DEC':telescope.SGR_DEC},
         'CygA':{'RA':telescope.CYGA_RA, 'DEC':telescope.CYGA_DEC},
-        'CasA':{'RA':telescope.CASA_RA, 'DEC':telescope.CASA_DEC},
-        'off_CygA':{'RA':telescope.CYGA_RA, 'DEC':telescope.CYGA_DEC}
+        'CasA':{'RA':telescope.CASA_RA, 'DEC':telescope.CASA_DEC}
             }
 
 if INPUT_RA is None and INPUT_DEC is None:
@@ -45,8 +44,6 @@ if INPUT_RA and INPUT_DEC is not None:
 print(f'Starting observation of {OBJECT}')
 # Point to first coordinate values (alt, az)
 ALT0, AZ0 = t.calc_altaz(RA, DEC)
-if OBJECT == sources['off_CygA']:
-    ALT0 += 20
 print('Initial coords:', ALT0, AZ0)
 
 in_range = False
