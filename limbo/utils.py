@@ -2,6 +2,7 @@
 
 import numpy as np
 from scipy.fft import rfft, irfft
+from scipy.optimize import curve_fit
 
 def calc_inttime(sample_freq_hz, acc_len, nchan):
     '''Calculate integration time [s] from sample_freq and acc_len.'''
@@ -49,3 +50,59 @@ def dedisperse(profile, dm, freqs, inttime, oversample=1, dtype=None):
     _profile = rfft(profile, axis=0)
     profile = irfft(_profile * phs, oversample * profile.shape[0], axis=0) * oversample
     return profile
+
+def _line(x, m, b):
+    return m*x + b
+
+def _linear_fit(x, y, m0, b0, return_cov=False):
+    pars0 = [m0, b0]
+    pars, cov = curve_fit(_line, x, y, p0=pars0)
+    if return_cov:
+        return pars, cov
+    else:
+        return pars
+
+def calc_fluence(vts, fluxes, vhdr, sum_int, nbins):
+    """
+    Compute pulse fluence.
+    Inputs:
+        - vts [s]: times
+        - fluxes [Jy]: flux data (average over frequency and de-dispersed)
+        - vhdr: volt header
+        - sum_int: how many integrations are summed together
+        - nbins: number of time bins to compute fluence over
+
+    Returns:
+        - Fluence and its error [Jyms]
+    """
+    noise = np.random.normal(loc=0, scale=np.abs(np.std(fluxes)), size=nbins * 2)
+    blanked_profile = fluxes.copy()
+    pulse_max = np.argmax(fluxes)
+    blanked_profile[pulse_max-nbins:pulse_max+nbins] = noise
+    pars, cov = _linear_fit(vts, blanked_profile, 0, 0, return_cov=True)
+    m, b = pars
+    dm, db = np.sqrt(np.diag(cov))
+    fit = _line(vts, m, b)
+    fluence = np.sum((fluxes - fit)[pulse_max-nbins:pulse_max+nbins]) * (vhdr['inttime']*sum_int*1e3)
+    dFdm = -0.5 * (vhdr['inttime']*sum_int*1e3)**2 * dm * 1e-3
+    dFdb = -vhdr['inttime']*sum_int*1e3 * db
+    err_noise = np.std(blanked_profile - fit) * vhdr['inttime']*sum_int*1e3
+    fluence_err = dFdm + dFdb + err_noise
+    return fluence, fluence_err
+
+def pspec_snr_dedispersion(hdr, cal_data, DM, pmDM=5, ntrials=128, resamp_factor=1, ch0=398, ch1=398+1024):
+        """ Dedisperse in a way that maximizes the SNR. Returns zscore and DM. """
+        dms = np.linspace(DM - pmDM, DM + pmDM, ntrials, endpoint=False)
+        maxz = 0
+        maxz_dm = 0
+        for dm in dms:
+            profile = dedisperse(cal_data, dm, hdr['freqs'], hdr['inttime'], resamp_factor)
+            avg_profile = np.mean(profile[:, ch0:ch1], axis=-1)
+            zscore = (avg_profile - np.mean(avg_profile)) / np.std(avg_profile)
+            maxz0 = np.max(zscore)
+            if maxz0 > maxz:
+                maxz = maxz0
+                maxz_dm = dm
+            else:
+                continue
+        return maxz, maxz_dm
