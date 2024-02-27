@@ -13,7 +13,7 @@ PURGATORY_KEY = 'limbo:purgatory'
 MAIN_PATH = '/home/obs/data' # Where saved files and their notebooks go
 #DATA_PATH = '/home/obs/data'
 DATA_PATH = '/mnt/data01' # Where data is stored for reprocessing
-REMOVE_PATH = '/mnt/data03' # Where reprocessed data goes
+REMOVE_PATH = '/mnt/data02' # Where reprocessed data goes
 SAVE_PATH = os.path.join(MAIN_PATH, 'save')
 NOTEBOOK_PATH = os.path.join(MAIN_PATH, 'notebook')
 # VOLT_DIR = '/mnt/ramdisk'
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     qlen = r.llen(REDIS_RAW_PSPEC_FILES)
     print(f'Starting LIMBO processing. Queue length={qlen}')
     children = {}
-    nworkers = 8
+    nworkers = 15
     try:
         while True:
             qlen = r.llen(REDIS_RAW_PSPEC_FILES)
