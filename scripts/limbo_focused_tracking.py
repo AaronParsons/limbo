@@ -31,7 +31,8 @@ sources = {
         'crab':{'RA':telescope.CRAB_RA, 'DEC':telescope.CRAB_DEC},
         'sgr1935':{'RA':telescope.SGR_RA, 'DEC':telescope.SGR_DEC},
         'CygA':{'RA':telescope.CYGA_RA, 'DEC':telescope.CYGA_DEC},
-        'CasA':{'RA':telescope.CASA_RA, 'DEC':telescope.CASA_DEC}
+        'CasA':{'RA':telescope.CASA_RA, 'DEC':telescope.CASA_DEC},
+        'FRB20240114': {'RA':telescope.FRB20240114_RA, 'DEC':telescope.FRB20240114_DEC}
             }
 
 if INPUT_RA is None and INPUT_DEC is None:

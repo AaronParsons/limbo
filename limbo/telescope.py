@@ -63,6 +63,9 @@ CYGA_RA, CYGA_DEC = '19h59m28.35656837s', '+40d44m02.0972325s'
 # Cassiopia A
 CASA_RA, CASA_DEC = '23h23m24.000', '+58d48m54.00'
 
+# FRB20240114
+FRB20240114_RA, FRB20240114_DEC = '21h27m39.84', '+04d19m46.34'
+
 class Telescope:
     """
     Interface for controlling the Leuschner Telescope. Copied from ugradio.

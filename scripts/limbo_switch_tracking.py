@@ -22,9 +22,14 @@ t = telescope.Telescope()
 
 # NOTE: Sources are listed in order of priority
 SRCS = {
-        'sgr1935':(telescope.SGR_RA, telescope.SGR_DEC),
-        'crab':(telescope.CRAB_RA, telescope.CRAB_DEC)
+        'FRB20240114':(telescope.FRB20240114_RA, telescope.FRB20240114_DEC),
+        'sgr1935':(telescope.SGR_RA, tlescope.SGRDEC)
         }
+# SRCS = {
+#         'sgr1935':(telescope.SGR_RA, telescope.SGR_DEC),
+#         'crab':(telescope.CRAB_RA, telescope.CRAB_DEC)
+#         }
+
 
 def can_point(ra, dec, jd=None):
     alt, az = t.calc_altaz(ra, dec, jd=jd)
