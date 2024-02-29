@@ -1,7 +1,7 @@
 #! /usr/bin/bash
 
 export DATAPATH=/home/obs/data
-export REMOVE_DIR=/mnt/data02
+export REMOVE_DIR=/mnt/data03
 
 dates=($(python /home/obs/limbo/scripts/limbo_get_data_dates.py | tr -d '[],'))
 digits=(${dates[@]//\'/})
