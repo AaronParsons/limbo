@@ -29,7 +29,7 @@ CALGAIN = CAL_NPZ['cnt2jy']
 CALGAIN = np.roll(CALGAIN, shift=-2).astype(DTYPE)
 
 
-FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v003.npz')
+FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v004.npz')
 FREQ_MASK_NPZ = np.load(FREQMASK_FILE)
 FREQ_MASK = FREQ_MASK_NPZ['mask']
 FREQ_AMAT = FREQ_MASK_NPZ['amat'].astype(CDTYPE)
