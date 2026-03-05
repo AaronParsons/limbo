@@ -27,6 +27,8 @@ CAL_FILE = os.path.join(os.path.dirname(__file__),'data', 'calibration_v001.npz'
 CAL_NPZ = np.load(CAL_FILE)
 CALGAIN = CAL_NPZ['cnt2jy']
 CALGAIN = np.roll(CALGAIN, shift=-2).astype(DTYPE)
+flux_contamination_correction_factor = 0.19
+CALGAIN *= flux_contamination_correction_factor
 
 
 FREQMASK_FILE = os.path.join(os.path.dirname(__file__),'data', 'freq_mask_v004.npz')
